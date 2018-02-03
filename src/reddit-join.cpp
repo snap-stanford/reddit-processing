@@ -21,6 +21,9 @@ unsigned int file_size;
 string input_dir;
 string output_dir;
 
+bool verbose;
+bool debug;
+
 /**
  * @fn parse_cli_args
  * @param argc: Number of arguments
@@ -80,7 +83,7 @@ int main(int argc, const char* argv[]) {
   parse_cli_args(argc, argv);
   logger::init();
 
-  LOG_INFO << "Input" << input_dir;
+  LOG_INFO << "Input: " << input_dir;
 
   return 0;
 }

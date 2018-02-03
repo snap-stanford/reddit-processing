@@ -3,36 +3,26 @@
  * @breif Global logger
  */
 
-#ifndef REDDIT_LOGGER_HPP
-#define REDDIT_LOGGER_HPP
+#ifndef LOGGER_HPP
+#define LOGGER_HPP
 
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
-#include <boost/log/sources/global_logger_storage.hpp>
 #include <boost/log/support/date_time.hpp>
 #include <boost/log/utility/setup.hpp>
-#include <boost/log/sinks.hpp>
 #include <boost/log/sources/logger.hpp>
 
-namespace logging = boost::log;
-namespace src = boost::log::sources;
-namespace sinks = boost::log::sinks;
-namespace keywords = boost::log::keywords;
-
-#define LOG_DEBUG BOOST_LOG_SEV(log, logging::trivial::debug)
-#define LOG_INFO BOOST_LOG_SEV(log, logging::trivial::info)
-#define LOG_WARNING BOOST_LOG_SEV(log, logging::trivial::warning)
-#define LOG_ERROR BOOST_LOG_SEV(log, logging::trivial::error)
+#define LOG_DEBUG BOOST_LOG_SEV(logger::log, boost::log::trivial::debug)
+#define LOG_INFO BOOST_LOG_SEV(logger::log, boost::log::trivial::info)
+#define LOG_WARNING BOOST_LOG_SEV(logger::log, boost::log::trivial::warning)
+#define LOG_ERROR BOOST_LOG_SEV(logger::log, boost::log::trivial::error)
 
 namespace logger {
 
-  bool verbose;
-  bool debug;
+  bool verbose = false;
+  bool debug = false;
+  boost::log::sources::severity_logger<boost::log::trivial::severity_level> log;
 
-  /**
-   * @fn init
-   * @breif Sets up the global logger
-   */
   void init() {
     boost::log::add_common_attributes();
 
@@ -60,6 +50,4 @@ namespace logger {
   }
 }
 
-
-
-#endif //REDDIT_LOGGER_HPP
+#endif // LOGGER_HPP
