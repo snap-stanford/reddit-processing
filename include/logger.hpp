@@ -12,22 +12,15 @@
 #include <boost/log/utility/setup.hpp>
 #include <boost/log/sources/logger.hpp>
 
-#define LOG_DEBUG   BOOST_LOG_SEV(logger::log, boost::log::trivial::debug)
-#define LOG_INFO    BOOST_LOG_SEV(logger::log, boost::log::trivial::info)
-#define LOG_WARNING BOOST_LOG_SEV(logger::log, boost::log::trivial::warning)
-#define LOG_ERROR   BOOST_LOG_SEV(logger::log, boost::log::trivial::error)
+#define LOG_DEBUG   BOOST_LOG_SEV(logger, boost::log::trivial::debug)
+#define LOG_INFO    BOOST_LOG_SEV(logger, boost::log::trivial::info)
+#define LOG_WARNING BOOST_LOG_SEV(logger, boost::log::trivial::warning)
+#define LOG_ERROR   BOOST_LOG_SEV(logger, boost::log::trivial::error)
 
-namespace logger {
+void init_logger();
 
-  static bool verbose = false;
-  static bool debug = false;
-  static boost::log::sources::severity_logger<boost::log::trivial::severity_level> log;
-
-  /**
-   * @fn init
-   * @brief Initializes the global logger
-   */
-  void init();
-}
+extern boost::log::sources::severity_logger<boost::log::trivial::severity_level> logger;
+extern bool verbose;
+extern bool debug;
 
 #endif // LOGGER_HPP

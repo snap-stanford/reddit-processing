@@ -4,7 +4,11 @@
 
 #include <logger.hpp>
 
-void logger::init() {
+boost::log::sources::severity_logger<boost::log::trivial::severity_level> logger;
+bool verbose = false;
+bool debug = false;
+
+void init_logger() {
    boost::log::add_common_attributes();
 
     if (debug)
