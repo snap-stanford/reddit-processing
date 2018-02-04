@@ -5,13 +5,13 @@
 
 #include <iostream>
 
+#include <joiner.hpp>
 #include <logger.hpp>
 
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
+
 
 namespace po = boost::program_options;
-namespace fs = boost::filesystem;
 
 using namespace std;
 
@@ -20,9 +20,6 @@ string output_prefix;
 unsigned int file_size;
 string input_dir;
 string output_dir;
-
-bool verbose;
-bool debug;
 
 /**
  * @fn parse_cli_args
@@ -48,8 +45,8 @@ void parse_cli_args(int argc, const char* argv[]) {
 
   po::options_description hidden("Hidden");
   hidden.add_options()
-    ("data-file", po::value<string>(&input_dir), "High-level data directory")
-    ("output-file", po::value<string>(&output_dir), "Output directory");
+    ("input-dir", po::value<string>(&input_dir), "Input directory")
+    ("output-dir", po::value<string>(&output_dir), "Output directory");
 
   po::positional_options_description p;
   p.add("data-file", 1).add("output-directory", 1);
@@ -74,7 +71,7 @@ void parse_cli_args(int argc, const char* argv[]) {
   }
 
   if (vm.count("version")) {
-    cout << "R" << endl;
+    cout << "Reddit Joiner 1.0" << endl;
     exit(1);
   }
 }
@@ -84,7 +81,14 @@ int main(int argc, const char* argv[]) {
   logger::init();
 
   LOG_INFO << "Input: " << input_dir;
+  LOG_INFO << "Output: " << output_dir;
+  LOG_INFO << "Output file size: " << file_size;
+  LOG_INFO << "Prefix: " << output_prefix;
 
+  Joiner joiner(input_dir, output_dir);
+  joiner.join();
+
+  LOG_INFO << "Exiting";
   return 0;
 }
 

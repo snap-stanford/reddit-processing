@@ -24,9 +24,9 @@ else()
     SET(CMAKE_CXX_FLAGS "-std=c++11 -Ofast -fpermissive -DBOOST_LOG_DYN_LINK")
 endif()
 
-set(SOURCE
-                                            src/reddit-join.cpp
-        include/logger.hpp                  )
+set(SOURCE src/reddit-join.cpp
+        include/joiner.hpp              src/joiner.cpp
+        include/logger.hpp src/logger.cpp)
 
 set(TARGET reddit-join)
 add_executable(${TARGET} ${SOURCE})
