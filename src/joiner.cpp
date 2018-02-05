@@ -23,9 +23,9 @@ Joiner::Joiner(const std::string& input_dir,
 void Joiner::join() {
   fs::directory_iterator it(input_dir), eod;
   BOOST_FOREACH(fs::path const &p, std::make_pair(it, eod)) {
-  if (!fs::is_directory(p)) continue;
-    boost::asio::post(pool, [=]() {
-      process_dataset(p);
+    if (!fs::is_directory(p)) continue;
+    boost::asio::post(pool, [=] () {
+          process_dataset(p);
     });
   }
   pool.join();
@@ -34,7 +34,8 @@ void Joiner::join() {
 void Joiner::process_dataset(fs::path const& dataset_path) {
   LOG_INFO << "Processing data set: " << dataset_path;
   fs::directory_iterator it(input_dir), eod;
-  BOOST_FOREACH(fs::path const &p, std::make_pair(it, eod)) {
+  BOOST_FOREACH(fs::path const &p, std::make_pair(it, eod))
+  {
     if (fs::is_directory(p)) continue;
     boost::asio::post(pool, [=]() {
       process_file(p);

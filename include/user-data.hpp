@@ -13,15 +13,10 @@
 
 class UserAction {
 
-  friend bool operator<(const UserAction& a, const UserAction& b);
-
+    friend bool operator<(const UserAction& a, const UserAction& b);
 private:
   std::time_t time;
 };
-
-bool operator<(const UserAction& a, const UserAction& b) {
-  return a.time < b.time;
-}
 
 class UserData {
 public:

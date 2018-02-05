@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 2.8)
 project(Reddit)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -18,10 +18,10 @@ endif()
 # cmake -DCMAKE_BUILD_TYPE=Debug ..
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Mode: Debug")
-    SET(CMAKE_CXX_FLAGS "-std=c++11 -g -O0 -Wall -fpermissive -Wextra -pedantic -DBOOST_LOG_DYN_LINK")
+    SET(CMAKE_CXX_FLAGS "-std=gnu++0x -g -O0 -Wall -fpermissive -Wextra -pedantic -DBOOST_LOG_DYN_LINK")
 else()
     message(STATUS "Mode: Release")
-    SET(CMAKE_CXX_FLAGS "-std=c++11 -Ofast -fpermissive -DBOOST_LOG_DYN_LINK")
+    SET(CMAKE_CXX_FLAGS "-std=gnu++0x -O3 -fpermissive -DBOOST_LOG_DYN_LINK")
 endif()
 
 set(SOURCE src/reddit-join.cpp

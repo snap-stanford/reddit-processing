@@ -3,3 +3,10 @@
 //
 
 #include "user-data.hpp"
+
+
+bool operator<(const UserAction& a, const UserAction& b) {
+  return a.time < b.time;
+}
+
+
