@@ -48,7 +48,7 @@ void Joiner::write_output() {
 }
 
 void Joiner::process_file(fs::path const& dataset_path) {
-  LOG_DBUG << "Processing: " << dataset_path;
+  LOG_DEBUG << "Processing: " << dataset_path;
   (void) dataset_path;
-  LOG_DBUG << "Processed: " << dataset_path;
+  LOG_DEBUG << "Processed: " << dataset_path;
 }
