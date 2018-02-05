@@ -12,6 +12,11 @@
 namespace fs = boost::filesystem;
 using namespace std;
 
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
 Joiner::data_set_type find_data_set_type(fs::path const& dataset_path);
 
 Joiner::Joiner(const std::string& input_dir,
@@ -42,7 +47,7 @@ void Joiner::join_users() {
 
 void Joiner::process_dataset(fs::path const& dataset_path) {
   LOG_INFO << "Processing data set: " << dataset_path;
-  data_set_type data_type = find_data_set_type(dataset_path);
+  auto data_type = find_data_set_type(dataset_path);
   if (data_type == unknown) {
     LOG_WARNING << "Unknown data set type: " << dataset_path;
   }

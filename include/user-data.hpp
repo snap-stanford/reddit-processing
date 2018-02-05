@@ -20,6 +20,14 @@ class Subscription : UserAction {
 
 };
 
+class Vote : UserAction {
+
+};
+
+class Removal : UserAction {
+
+};
+
 class UserData {
 public:
   explicit UserData(const std::string id) : id(id) { }
