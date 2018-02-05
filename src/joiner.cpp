@@ -14,8 +14,7 @@ Joiner::Joiner(const std::string& input_dir, const std::string& output_dir)
 }
 
 void Joiner::join() {
-  (void) output_file_size;
-  (void) prefix;
-  LOG_WARNING << "LOL it works";
-  LOG_ERROR << "oiwjefoiwjefoiwef";
+
+
+
 }

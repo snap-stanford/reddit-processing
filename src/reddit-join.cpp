@@ -35,8 +35,8 @@ void parse_cli_args(int argc, const char* argv[]) {
 
   po::options_description log_options("Logging");
   log_options.add_options()
-    ("verbose,v",   po::bool_switch(&verbose), "verbose output")
-    ("debug,debug", po::bool_switch(&debug), "debuging output");
+    ("verbose,v",   po::bool_switch(&logger::verbose), "verbose output")
+    ("debug,debug", po::bool_switch(&logger::debug), "debuging output");
 
   po::options_description config("Config");
   config.add_options()
@@ -78,20 +78,17 @@ void parse_cli_args(int argc, const char* argv[]) {
 
 int main(int argc, const char* argv[]) {
   parse_cli_args(argc, argv);
-  init_logger();
+  logger::init();
 
   LOG_INFO << "Input: " << input_dir;
   LOG_INFO << "Output: " << output_dir;
   LOG_INFO << "Output file size: " << file_size;
   LOG_INFO << "Prefix: " << output_prefix;
 
-
-  LOG_WARNING << "bad bad bad!";
-
   Joiner joiner(input_dir, output_dir);
   joiner.join();
 
-  LOG_INFO << "Exiting";
+  LOG_DEBUG << "Exiting";
   return 0;
 }
 

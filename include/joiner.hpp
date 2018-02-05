@@ -10,8 +10,6 @@
 
 class Joiner {
 public:
-
-  explicit Joiner() = default;
   Joiner(const std::string& input_dir, const std::string& output_dir);
 
   void join();

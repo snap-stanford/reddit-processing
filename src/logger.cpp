@@ -4,19 +4,22 @@
 
 #include <logger.hpp>
 
-boost::log::sources::severity_logger<boost::log::trivial::severity_level> logger;
-bool verbose = false;
-bool debug = false;
+namespace logger {
 
-void init_logger() {
-   boost::log::add_common_attributes();
+  boost::log::sources::severity_logger<boost::log::trivial::severity_level> log;
+  bool verbose = false;
+  bool debug = false;
+
+
+  void init() {
+    boost::log::add_common_attributes();
 
     if (debug)
-      boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::debug);
+      boost::log::core::get()->set_filter(boost::log::trivial::debug <= boost::log::trivial::severity);
     else if (verbose)
-      boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::info);
+      boost::log::core::get()->set_filter(boost::log::trivial::info <= boost::log::trivial::severity);
     else
-      boost::log::core::get()->set_filter(boost::log::trivial::severity >= boost::log::trivial::warning);
+      boost::log::core::get()->set_filter(boost::log::trivial::warning <= boost::log::trivial::severity);
 
     // log format: [TimeStamp] [Severity Level] Log message
     auto fmtTimeStamp = boost::log::expressions::
@@ -32,4 +35,6 @@ void init_logger() {
 
     auto console_sink = boost::log::add_console_log(std::clog);
     console_sink->set_formatter(logFmt);
+  }
+
 }
