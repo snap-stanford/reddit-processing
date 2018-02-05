@@ -51,8 +51,7 @@ void parse_cli_args(int argc, const char* argv[]) {
     ("output-dir", po::value<string>(&output_dir), "Output directory");
 
   po::positional_options_description p;
-  p.add("data-file", 1).add("output-directory", 1);
-  p.add("input", 1).add("output-file", 1);
+  p.add("input-dir", 1).add("output-dir", 1);
 
   po::options_description desc("Reddit joiner options");
   desc.add(info).add(log_options).add(config);

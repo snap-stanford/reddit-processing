@@ -33,9 +33,8 @@ void Joiner::join() {
 
 void Joiner::process_dataset(fs::path const& dataset_path) {
   LOG_INFO << "Processing data set: " << dataset_path;
-  fs::directory_iterator it(input_dir), eod;
-  BOOST_FOREACH(fs::path const &p, std::make_pair(it, eod))
-  {
+  fs::directory_iterator it(dataset_path), eod;
+  BOOST_FOREACH(fs::path const &p, std::make_pair(it, eod)) {
     if (fs::is_directory(p)) continue;
     boost::asio::post(pool, [=]() {
       process_file(p);
