@@ -20,6 +20,7 @@ string output_prefix;
 unsigned int file_size;
 string input_dir;
 string output_dir;
+unsigned int pool_size;
 
 /**
  * @fn parse_cli_args
@@ -41,7 +42,8 @@ void parse_cli_args(int argc, const char* argv[]) {
   po::options_description config("Config");
   config.add_options()
     ("prefix,p",  po::value<string>(&output_prefix)->default_value("join"),  "prefix for output files")
-    ("size,s",    po::value<unsigned int>(&file_size)->default_value(2000),  "output file size limit");
+    ("size,s",    po::value<unsigned int>(&file_size)->default_value(2000),  "output file size limit")
+    ("pool",      po::value<unsigned int>(&pool_size)->default_value(8),     "thread pool size");
 
   po::options_description hidden("Hidden");
   hidden.add_options()
@@ -85,7 +87,9 @@ int main(int argc, const char* argv[]) {
   LOG_INFO << "Output file size: " << file_size;
   LOG_INFO << "Prefix: " << output_prefix;
 
-  Joiner joiner(input_dir, output_dir);
+   boost::asio::thread_pool pool(pool_size);
+
+  Joiner joiner(input_dir, output_dir, pool);
   joiner.join();
 
   LOG_DEBUG << "Exiting";

@@ -26,7 +26,7 @@ endif()
 
 set(SOURCE src/reddit-join.cpp
         include/joiner.hpp              src/joiner.cpp
-        include/logger.hpp src/logger.cpp)
+        include/logger.hpp src/logger.cpp src/user-data.cpp include/user-data.hpp)
 
 set(TARGET reddit-join)
 add_executable(${TARGET} ${SOURCE})
