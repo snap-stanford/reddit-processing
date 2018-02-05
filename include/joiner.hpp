@@ -16,31 +16,38 @@ public:
   Joiner(const std::string& input_dir, const std::string& output_dir,
          boost::asio::thread_pool& pool);
 
-  void join();
+  void join_users();
 
   enum data_set_type {
-      user,
-      vote,
-      comment,
-      submission,
-      removal,
-      report,
-      subscription,
-      unknown
-  }
+    user,
+    vote,
+    comment,
+    submission,
+    removal,
+    report,
+    subscription,
+    unknown
+  };
 
 private:
- 
-  void process_users();
+
+  boost::filesystem::path find_user_data();
+
+  void make_user_data_locks();
+
+  void process_users(boost::filesystem::path const& users_dataset);
+  void process_user_file(boost::filesystem::path const& data_file);
+
   void process_dataset(boost::filesystem::path const& dataset_path);
   void process_file(boost::filesystem::path const& data_file, data_set_type type);
+  void process_vote_file(boost::filesystem::path const& data_file);
+  void process_comment_file(boost::filesystem::path const& data_file);
+  void process_submission_file(boost::filesystem::path const& data_file);
+  void process_removal_file(boost::filesystem::path const& data_file);
+  void process_report_file(boost::filesystem::path const& data_file);
+  void process_subscription_file(boost::filesystem::path const& data_file);
 
-void Joiner::process_vote_file(fs::path const& data_file);
-void Joiner::process_comment_file(fs::path const& data_file);
-void Joiner::process_submission_file(fs::path const& data_file);
-void Joiner::process_removal_file(fs::path const& data_file);
-void Joiner::process_report_file(fs::path const& data_file);
-void Joiner::process_subscription_file(fs::path const& data_file);
+  void write_output();
 
   const std::string input_dir;
   const std::string output_dir;
@@ -49,9 +56,9 @@ void Joiner::process_subscription_file(fs::path const& data_file);
 
   std::mutex m;
   std::unordered_map<std::string, UserData> action_map;
-  boost::asio::thread_pool& pool;
 
-  void write_output();
+  std::unordered_map<std::string, std::mutex> user_locks;
+  boost::asio::thread_pool& pool;
 };
 
 #endif //REDDIT_JOINER_HPP

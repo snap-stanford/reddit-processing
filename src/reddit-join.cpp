@@ -41,7 +41,7 @@ void parse_cli_args(int argc, const char* argv[]) {
 
   po::options_description config("Config");
   config.add_options()
-    ("prefix,p",  po::value<string>(&output_prefix)->default_value("join"),  "prefix for output files")
+    ("prefix,p",  po::value<string>(&output_prefix)->default_value("join_users"),  "prefix for output files")
     ("size,s",    po::value<unsigned int>(&file_size)->default_value(2000),  "output file size limit")
     ("pool",      po::value<unsigned int>(&pool_size)->default_value(8),     "thread pool size");
 
@@ -89,7 +89,7 @@ int main(int argc, const char* argv[]) {
    boost::asio::thread_pool pool(pool_size);
 
   Joiner joiner(input_dir, output_dir, pool);
-  joiner.join();
+  joiner.join_users();
 
   LOG_DEBUG << "Exiting";
   return 0;
