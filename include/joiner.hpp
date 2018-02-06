@@ -33,8 +33,6 @@ private:
 
   boost::filesystem::path find_user_data();
 
-  void make_user_data_locks();
-
   void process_users(boost::filesystem::path const& users_dataset);
   void process_user_file(boost::filesystem::path const& data_file);
 

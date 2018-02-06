@@ -33,7 +33,6 @@ void Joiner::join_users() {
   fs::path user_dataset = find_user_data();
 
   process_users(user_dataset);
-  make_user_data_locks();
 
   fs::directory_iterator it(input_dir), eod;
   BOOST_FOREACH(fs::path const &p, std::make_pair(it, eod)) {
@@ -68,9 +67,10 @@ void Joiner::write_output() {
 
 boost::filesystem::path Joiner::find_user_data() {
   fs::directory_iterator it(input_dir), eod;
-  BOOST_FOREACH(fs::path const &p, std::make_pair(it, eod))
+  BOOST_FOREACH(fs::path const &p, std::make_pair(it, eod)) {
           if (find_data_set_type(p) == user)
             return p;
+        }
 
   LOG_ERROR << "No user data found in: " << input_dir;
   throw std::runtime_error("No user data found.");
@@ -85,7 +85,7 @@ void Joiner::process_user_file(fs::path const& data_file) {
   in.read_header(io::ignore_extra_column,
                  "registration_dt", "user_id", "registration_country_code","is_suspended");
 
-  // Make a map contining on the subset of users from this file
+  // Make a map containing on the subset of users from this file
   unordered_map<string, UserData> users;
 
   string reg_date, uid, country, is_suspended;
@@ -94,29 +94,23 @@ void Joiner::process_user_file(fs::path const& data_file) {
       LOG_WARNING << "Duplicate user id: " << uid;
       continue;
     }
+
     bool suspended;
-    if (is_suspended == "true")
-      suspended = true;
-    else if (is_suspended == "false")
-      suspended = false;
+    if (is_suspended == "true") suspended = true;
+    else if (is_suspended == "false") suspended = false;
     else {
       LOG_WARNING << "User: " << uid << "Unknown suspended value: " << is_suspended;
       continue;
     }
-    users.emplace(make_pair(uid, UserData(uid)));
+
+    users.emplace(std::make_pair(uid, UserData(std::move(uid), reg_date, country, suspended)));
   }
 
-  // Join the file
+  // join the users
   lock_guard<mutex> lg(m);
   LOG_DEBUG << "Joining users from: " << data_file.filename();
-  action_map.insert(users.begin(), users.end());
+  action_map.emplace(users.begin(), users.end());
 }
-
-void Joiner::make_user_data_locks() {
-  for (auto user_pair : action_map)
-    user_locks.emplace(user_pair.first, std::make_unique<mutex>());
-}
-
 
 void Joiner::process_file(fs::path const& data_file, data_set_type type) {
   LOG_DEBUG << "Processing: " << data_file.filename();
@@ -149,9 +143,25 @@ void Joiner::process_file(fs::path const& data_file, data_set_type type) {
 
   LOG_DEBUG << "Processed: " << data_file.filename();
 }
+
 void Joiner::process_vote_file(fs::path const& data_file) {
-// todo
-  (void) data_file;
+
+  io::CSVReader<6> in(data_file.string());
+
+  string endpoint_ts, user_id, sr_name, target_fullname, target_type, vote_direction;
+
+  while (in.read_row(
+    endpoint_ts, user_id, sr_name, target_fullname, target_type, vote_direction)) {
+    if (action_map.find(user_id) == action_map.end()) {
+      LOG_WARNING << "New User ID encountered: " << user_id;
+      continue;
+    }
+
+    // Make a vote object?
+    Vote vote(endpoint_ts, user_id, sr_name, target_fullname, target_type, vote_direction);
+    action_map[user_id].add_action(vote);
+  }
+
 }
 void Joiner::process_comment_file(fs::path const& data_file) {
 // todo
