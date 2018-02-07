@@ -103,7 +103,11 @@ void Joiner::process_user_file(fs::path const& data_file) {
       continue;
     }
 
-    users.emplace(std::make_pair(uid, UserData(std::move(uid), reg_date, country, suspended)));
+
+    users.emplace(std::make_pair(uid, UserData(std::move(uid),
+                                               std::move(reg_date),
+                                               std::move(country),
+                                               std::move(suspended))));
   }
 
   // join the users
