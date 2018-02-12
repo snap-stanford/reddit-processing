@@ -8,24 +8,32 @@
 set (Snap_ROOT_DIR $ENV{WORKSPACE_ROOT}/opt/Snap)
 MESSAGE(STATUS "Snap_ROOT_DIR: " ${Snap_ROOT_DIR}) # print which directory CMake is looking in.
 
-find_path(Snap_INCLUDE_DIR
-        NAMES snap-core snap-adv snap-exp
-        PATHS ${Snap_ROOT_DIR}/snap-core ${Snap_ROOT_DIR}/snap-adv ${Snap_ROOT_DIR}/snap-exp
+find_path(Snap_CORE
+        NAMES "Snap.h"
+        PATH_SUFFIXES snap-core
+        HINTS ${Snap_ROOT_DIR}
         DOC "The Snap include directory")
+message(STATUS "Snap core: " ${Snap_CORE})
+
+find_path(Snap_GLIB_CORE
+        NAMES "base.h"
+        PATH_SUFFIXES glib-core
+        HINTS ${Snap_ROOT_DIR}
+        DOC "The Snap GLib include dir")
+message(STATUS "Glib core: " ${Snap_GLIB_CORE})
 
 find_library(Snap_LIBRARY
-        NAMES Snap
-        PATHS ${Snap_ROOT_DIR}/snap-core/libsnap.a
+        NAMES libsnap.a
+        PATHS ${Snap_ROOT_DIR}/snap-core
         DOC "The Snap library")
+message(STATUS "Snap Library: " ${Snap_LIBRARY})
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set LOGGING_FOUND to TRUE
-# if all listed variables are TRUE
-find_package_handle_standard_args(Snap DEFAULT_MSG Snap_INCLUDE_DIR Snap_LIBRARY)
+find_package_handle_standard_args(Snap DEFAULT_MSG Snap_CORE Snap_GLIB_CORE Snap_LIBRARY)
 
 if (Snap_FOUND)
     set(Snap_LIBRARIES ${Snap_LIBRARY})
-    set(Snap_INCLUDE_DIRS ${Snap_ROOT_DIR}/snap-core)
+    set(Snap_INCLUDE_DIRS ${Snap_CORE} ${Snap_GLIB_CORE})
     set(Snap_DEFINITIONS)
 endif()
 
