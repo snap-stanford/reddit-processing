@@ -9,7 +9,7 @@ set (Snap_ROOT_DIR $ENV{WORKSPACE_ROOT}/opt/Snap)
 MESSAGE(STATUS "Snap_ROOT_DIR: " ${Snap_ROOT_DIR}) # print which directory CMake is looking in.
 
 find_path(Snap_INCLUDE_DIR
-        NAMES Snap
+        NAMES snap-core snap-adv snap-exp
         PATHS ${Snap_ROOT_DIR}/snap-core ${Snap_ROOT_DIR}/snap-adv ${Snap_ROOT_DIR}/snap-exp
         DOC "The Snap include directory")
 
@@ -25,7 +25,7 @@ find_package_handle_standard_args(Snap DEFAULT_MSG Snap_INCLUDE_DIR Snap_LIBRARY
 
 if (Snap_FOUND)
     set(Snap_LIBRARIES ${Snap_LIBRARY})
-    set(Snap_INCLUDE_DIRS ${Snap_INCLUDE_DIR})
+    set(Snap_INCLUDE_DIRS ${Snap_ROOT_DIR}/snap-core)
     set(Snap_DEFINITIONS)
 endif()
 

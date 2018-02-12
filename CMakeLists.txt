@@ -11,9 +11,9 @@ else()
     message(STATUS "Snap Found.")
 endif (NOT Snap_FOUND)
 add_definitions(${Snap_DEFINITIONS})
-include_directories(${Snap_INCLUDE_DIR})
+include_directories(${Snap_INCLUDE_DIRS})
+message("Snap Include: " ${Snap_INCLUDE_DIRS})
 set(LIBRARIES ${LIBRARIES} ${Snap_LIBRARIES})
-
 
 set(SOURCE Snap/main.cpp)
 
