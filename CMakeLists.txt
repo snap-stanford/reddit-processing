@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(Reddit)
 set(CMAKE_CXX_STANDARD 11)
 
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR})
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
 find_package(Snap REQUIRED)
 if (NOT Snap_FOUND)
