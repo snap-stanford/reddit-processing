@@ -21,5 +21,8 @@ void RedditParser::parse_vote_file(const TStr& path) {
   TimeS.Add(TPair<TStr, TAttrType>("target_type", atStr));
   TimeS.Add(TPair<TStr, TAttrType>("vote_direction", atStr));
 
-  PTable P = TTable::LoadSS(TimeS, path, &Context,' ');
+  PTable P = TTable::LoadSS(TimeS, path, &Context, ' ');
+
+
+
 }
