@@ -7,8 +7,6 @@
 
 int main(int argc, char* argv[]) {
 
-  TTable t;
-
 
 
   return 0;
