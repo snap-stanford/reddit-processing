@@ -3,19 +3,6 @@
 //
 
 #include "joiner.hpp"
-#include "logger.hpp"
-#include "csv.h"
-
-#include <boost/foreach.hpp>
-#include <boost/asio/post.hpp>
-
-namespace fs = boost::filesystem;
-using namespace std;
-
-template<typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
 
 Joiner::data_set_type find_data_set_type(fs::path const& dataset_path);
 

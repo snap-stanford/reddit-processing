@@ -1,6 +1,6 @@
 /**
  * @file main.cpp
- * @brief Okay
+ * @brief
  */
 
 #include <Snap.h>
