@@ -6,17 +6,14 @@
 #include <Snap.h>
 
 #define SPLITS 1024
+TFOut* file_outputs[SPLITS]; // output files
 
-
-void vote() {
-
-}
+TTable* split_tables[SPLITS]; // ttable
 
 int main(int argc, char* argv[]) {
 
   TStr path = argv[1];
   TStr target = argv[2];
-
 
   TStr endpoint_ts;
   TStr user_id;
@@ -40,27 +37,28 @@ int main(int argc, char* argv[]) {
   PTable P = TTable::LoadSS(VoteS, path, &Context, ',', title);
   printf("Loaded.\n");
 
-  THash<int, TFOut> file_buckets;
+  // todo: make all of the directories
+
+  // todo: make all of the files
   for (int i = 0; i < SPLITS; i++) {
-    TFOut fout(TStr::Fmt("%s/%05d/users_%05d.table", target, i, i));
-    file_buckets.AddDat(i, fout);
+    split_tables[i] = new TTable();
+    file_outputs[i] = new TFOut(TStr::Fmt("%s/%05d/users_%05d.table", target, i, i));
   }
 
+  // Iterate through all of the rows in the input
   for (int i = 0; i < P->GetNumRows(); ++i) {
     TStr uid = P->GetStrVal("user_id", i);
     printf("%s\n", uid.CStr());
 
     int bucket = uid.GetPrimHashCd() % SPLITS;
-    if (file_buckets.GetKey(bucket));
-
-    file_buckets.AddDat(bucket);
   }
+
+  // todo: Save all of the tables
 
   printf("Saving table...\n");
   TFOut out("./out.csv");
   P->SaveSS("out.tsv");
   printf("Saved.");
-
 
   return 0;
 }
