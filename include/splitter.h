@@ -8,33 +8,6 @@
 #include <Snap.h>
 #include "reddit-parser.h"
 
-#define SPLITS 1024
-
-class TableSplitter {
-
-public:
-
-  TableSplitter(
-    const TStr& table_directory,
-    const TStr& output_directory,
-    const Schema& schema)
-  : table_directory(table_directory),
-    output_directory(output_directory),
-    schema(schema) { }
-
-  void split_tables(const TStr& on);
-
-private:
-  TStr table_directory;
-  TStr output_directory;
-  Schema schema;
-  TTableContext Context;
-
-  void split_table(const TStr& tfile);
-  TTable* split_tables[num_splits]; // TTables
-  TFOut* file_outputs[num_splits]; // output files
-};
-
 class Splitter {
 public:
 
@@ -49,12 +22,11 @@ public:
     unknown
   };
 
-  Splitter(const TStr& input_dir, const TStr& output_dir)
-    : num_splits(1024) { }
+  explicit Splitter(const TStr& input_dir, const TStr& output_dir, int num_splits)
+    : num_splits(num_splits) { }
 
-  explicit Splitter(int num_splits) : num_splits(num_splits) {}
-
-  void split_entire_dataset();
+  void split_by_user();
+  void split_by_submission();
 
 private:
   TStr input_dir;
@@ -64,7 +36,6 @@ private:
 
   void create_target_dirs();
   void write_tables_out();
-
 
   void split_user_data();
   void split_vote_data();

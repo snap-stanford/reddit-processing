@@ -3,26 +3,18 @@
 //
 
 #include "splitter.h"
+#include "table-splitter.hpp"
 
-bool is_first(const TStr &tfile) {
-  // todo
-}
-
-void TableSplitter::split_tables() {
-  // todo: iterate
-}
-
-
-void TableSplitter::split_table(const TStr &tfile) {
-  TBool has_title = is_first(tfile);
-  PTable P = TTable::LoadSS(schema, tfile, &Context, ',', has_title);
-}
-
-void Splitter::split_entire_dataset() {
-  this->input_dir = input_dir;
-  this->output_dir = output_dir;
-
+void Splitter::split_by_user() {
   create_target_dirs();
+
+  split_user_data();
+  split_vote_data();
+  split_comment_data();
+  split_submission_data();
+  split_report_data();
+  split_removal_data();
+
   write_tables_out();
 }
 
@@ -37,6 +29,7 @@ void Splitter::write_tables_out() {
 }
 
 void Splitter::split_vote_data() {
+
   TStr endpoint_ts;
   TStr user_id;
   TStr sr_name;
@@ -53,7 +46,11 @@ void Splitter::split_vote_data() {
   vote_schema.Add(TPair<TStr, TAttrType>("vote_direction", atStr));
 
   TableSplitter splitter(vote_schema);
-  splitter.split_tables("user_id");
+  for (/* file in dir*/;;) {
+    
+    splitter.split_tables("user_id");
+  }
+  int x = 10;
 }
 
 void Splitter::process_file(const TStr& data_file, data_set_type type) {
