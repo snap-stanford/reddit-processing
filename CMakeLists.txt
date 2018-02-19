@@ -22,10 +22,16 @@ set(SOURCE
         include/splitter.h              src/splitter.cpp
         include/user-data.hpp           src/user-data.cpp
         include/reddit-parser.h         src/reddit-parser.cpp
-        src/main.cpp src/table-splitter.cpp include/table-splitter.hpp)
+        src/table-splitter.cpp include/table-splitter.hpp)
 
 set(OLD src/reddit-join.cpp
         include/joiner.hpp              src/joiner.cpp)
 
-add_executable(split-reddit ${SOURCE})
+
+set(TEST test/test.cpp)
+
+add_executable(split-reddit src/main.cpp  ${SOURCE})
 target_link_libraries(split-reddit ${LIBRARIES})
+
+add_executable(test-reddit ${TEST})
+target_link_libraries(test-reddit ${LIBRARIES})

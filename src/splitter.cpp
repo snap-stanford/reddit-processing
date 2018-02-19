@@ -28,7 +28,11 @@ void Splitter::write_tables_out() {
   // todo
 }
 
-void Splitter::split_vote_data() {
+void Splitter::split_user_data() {
+
+}
+
+void Splitter::split_vote_data(const TStr& dirname) {
 
   TStr endpoint_ts;
   TStr user_id;
@@ -45,12 +49,11 @@ void Splitter::split_vote_data() {
   vote_schema.Add(TPair<TStr, TAttrType>("target_type", atStr));
   vote_schema.Add(TPair<TStr, TAttrType>("vote_direction", atStr));
 
-  TableSplitter splitter(vote_schema);
-  for (/* file in dir*/;;) {
-    
-    splitter.split_tables("user_id");
-  }
-  int x = 10;
+  TableSplitter splitter(dirname, vote_schema, num_splits);
+  splitter.split_tables("user_id");
+  const TVec<PTable>& out = splitter.get_output_tables();
+
+
 }
 
 void Splitter::process_file(const TStr& data_file, data_set_type type) {

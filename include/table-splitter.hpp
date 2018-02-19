@@ -12,22 +12,23 @@ public:
 
   TableSplitter(
     const TStr& table_directory,
-    const Schema& schema)
+    const Schema& schema,
+    const int num_splits)
     : table_directory(table_directory),
-      schema(schema) { }
+      schema(schema),
+      num_splits(num_splits) { }
 
-  void split_tables(const TStr& on);
-
-  const TVec<TTable>& get_output_tables();
+  void split_tables(const TStr &on);
+  const TVec<PTable>& get_output_tables();
 
 private:
   TStr table_directory;
-  TStr output_directory;
   Schema schema;
+  const int num_splits;
   TTableContext Context;
 
-  void split_table(const TStr& tfile);
-  TVec<TTable> out_tables;
+  void split_table(const TStr& tfile, const TStr & on);
+  TVec<PTable> out_tables;
 };
 
 #endif //REDDIT_TABLE_SPLITTER_HPP
