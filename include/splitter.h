@@ -8,7 +8,7 @@
 #include <Snap.h>
 #include "reddit-parser.h"
 
-class Splitter {
+class RedditSplitter {
 public:
 
   enum data_set_type {
@@ -22,8 +22,18 @@ public:
     unknown
   };
 
-  explicit Splitter(const TStr& input_dir, const TStr& output_dir, int num_splits)
-    : num_splits(num_splits) { }
+  // Need special hash function for mapping enums, since they can's be hashed
+  class HashFunction {
+  public:
+    static inline int GetPrimHashCd(const data_set_type& Key) { return Key; }
+    static inline int GetSecHashCd(const data_set_type& Key) { return Key; }
+  };
+
+  explicit RedditSplitter(const TStr& InDir, const TStr& OutDir, int NumSplits)
+    : NumSplits(NumSplits) {
+    MakeSchemas(); // make all the schemas for each data set type
+    MakeOutFNameMap(); // make all of the
+  }
 
   void split_by_user();
   void split_by_submission();
@@ -31,26 +41,23 @@ public:
 private:
   TStr input_dir;
   TStr output_dir;
-  const int num_splits;
+  const int NumSplits;
 
   TVec<TStr> target_dirs;
 
-  THash<data_set_type, TStr> input_datasets;
+  THash<data_set_type, Schema, HashFunction> SchemaTable;
+  THash<data_set_type, TStr, HashFunction> OutFNmMap;
 
+  void split_on(const TStr& on);
 
-  void find_sub_directories();
   void create_target_dirs();
   void write_tables_out(const TVec<PTable>& tables, const TStr& prefix);
 
-  void split_user_data();
-  void split_vote_data(const TStr& dirname);
-  void split_comment_data();
-  void split_submission_data();
-  void split_report_data();
-  void split_removal_data();
-
   data_set_type find_data_set_type(const TStr& file);
-  void process_file(const TStr& data_file, data_set_type type);
+  void process_dataset(const TStr& DataSetDir, data_set_type type, const TStr &on);
+
+  void MakeSchemas();
+  void MakeOutFNameMap();
 };
 
 #endif //REDDIT_SPLITTER_HPP
