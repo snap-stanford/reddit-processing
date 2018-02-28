@@ -3,13 +3,7 @@ project(Reddit)
 set(CMAKE_CXX_STANDARD 11)
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-
 find_package(Snap REQUIRED)
-if (NOT Snap_FOUND)
-    message(FATAL_ERROR "Package Snap not found")
-else()
-    message(STATUS "Snap Found: " ${Snap_INCLUDE_DIRS})
-endif (NOT Snap_FOUND)
 
 add_definitions(${Snap_DEFINITIONS})
 include_directories(${Snap_INCLUDE_DIRS})

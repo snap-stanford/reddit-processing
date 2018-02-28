@@ -38,7 +38,10 @@ if (Snap_FOUND)
     set(Snap_LIBRARIES ${Snap_LIBRARY})
     set(Snap_INCLUDE_DIRS ${Snap_CORE} ${Snap_GLIB_CORE})
     set(Snap_DEFINITIONS)
-endif()
+    message(STATUS "Snap Found: " ${Snap_INCLUDE_DIRS})
+else()
+    message(FATAL_ERROR "Package Snap not found")
+endif (Snap_FOUND)
 
 # Tell cmake GUIs to ignore the "local" variables.
 mark_as_advanced(Snap_ROOT_DIR Snap_INCLUDE_DIR Snap_LIBRARY)
