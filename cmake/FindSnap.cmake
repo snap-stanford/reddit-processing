@@ -4,9 +4,10 @@
 #  Snap_INCLUDE_DIRS - The Snap include directories
 #  Snap_LIBRARIES    - The libraries needed to use Snap
 #  Snap_DEFINITIONS  - Compiler switches required for using Snap
+include(FindPackageHandleStandardArgs)
 
-set (Snap_ROOT_DIR $ENV{WORKSPACE_ROOT}/opt/Snap)
-MESSAGE(STATUS "Snap_ROOT_DIR: " ${Snap_ROOT_DIR}) # print which directory CMake is looking in.
+set(Snap_ROOT_DIR $ENV{WORKSPACE_ROOT}/opt/Snap)
+message(STATUS "Snap_ROOT_DIR: " ${Snap_ROOT_DIR}) # print which directory CMake is looking in.
 
 find_path(Snap_CORE
         NAMES "Snap.h"
@@ -19,7 +20,7 @@ find_path(Snap_GLIB_CORE
         NAMES "base.h"
         PATH_SUFFIXES glib-core
         HINTS ${Snap_ROOT_DIR}
-        DOC "The Snap GLib include dir")
+        DOC "The Snap GLib include directory")
 message(STATUS "Glib core: " ${Snap_GLIB_CORE})
 
 find_library(Snap_LIBRARY
@@ -28,8 +29,10 @@ find_library(Snap_LIBRARY
         DOC "The Snap library")
 message(STATUS "Snap Library: " ${Snap_LIBRARY})
 
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Snap DEFAULT_MSG Snap_CORE Snap_GLIB_CORE Snap_LIBRARY)
+find_package_handle_standard_args(Snap DEFAULT_MSG
+        Snap_CORE
+        Snap_GLIB_CORE
+        Snap_LIBRARY)
 
 if (Snap_FOUND)
     set(Snap_LIBRARIES ${Snap_LIBRARY})
