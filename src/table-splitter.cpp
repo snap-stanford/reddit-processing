@@ -4,7 +4,7 @@
 
 #include "table-splitter.hpp"
 
-void AddBucketAssignment(PTable &table,
+void AddBucketAssignment(PTable &Table,
                          const TStr &on,
                          int NumSplits,
                          const TStr& BucketColNm="bucket");
@@ -39,15 +39,15 @@ const TVec<PTable>& TableSplitter::get_output_tables() {
 }
 
 // stand-alone functions
-void AddBucketAssignment(PTable &table,
+void AddBucketAssignment(PTable &Table,
                          const TStr &on,
                          int NumSplits,
                          const TStr& BucketColNm) {
-  table->AddIntCol(BucketColNm);
-  for (TRowIterator RowI = table->BegRI(); RowI < table->EndRI(); RowI++) {
-    const TStr& uid = RowI.GetStrAttr("user_id");
+  Table->AddIntCol(BucketColNm);
+  for (TRowIterator RowI = Table->BegRI(); RowI < Table->EndRI(); RowI++) {
+    const TStr& uid = RowI.GetStrAttr(on);
     int bucket = uid.GetSecHashCd() % NumSplits;
-    table->SetIntVal(BucketColNm, RowI.GetRowIdx(), bucket);
+    Table->SetIntVal(BucketColNm, RowI.GetRowIdx(), bucket);
   }
 }
 

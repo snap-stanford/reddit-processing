@@ -11,19 +11,24 @@ int main(int argc, char* argv[]) {
   Env =  TEnv(argc, argv, TNotify::StdNotify);
   Env.PrepArgs(TStr::Fmt("Reddit splitter. build: %s, %s. Time: %s", __TIME__, __DATE__, TExeTm::GetCurTm()));
 
-  const TStr InFNm =    Env.GetIfArgPrefixStr("-i:", "", "Input directory");
-  const TStr OutFNm =   Env.GetIfArgPrefixStr("-o:", "", "Output directory");
+  const TStr InputDir =    Env.GetIfArgPrefixStr("-i:", "", "Input directory");
+  const TStr OutDir =   Env.GetIfArgPrefixStr("-o:", "", "Output directory");
   const int NumSplits = Env.GetIfArgPrefixInt("-n:", 1024, "Number of splits to make ");
   const bool ByUser =   Env.GetIfArgPrefixBool("-u", true, "Split by user");
   const bool BySub =    Env.GetIfArgPrefixBool("-s", false, "Split by submission");
 
-  RedditSplitter splitter(InFNm, OutFNm, NumSplits);
+  if (TFile::Exists(InputDir)) {
+    printf("not exist");
+    return -1;
+  }
+
+  RedditSplitter splitter(InputDir, OutDir, NumSplits);
   if (ByUser) {
-    splitter.split_by_user();
+    splitter.SplitByUser();
   }
 
   if (BySub) {
-    splitter.split_by_submission();
+    splitter.SplitBySubmission();
   }
 
   return 0;

@@ -85,42 +85,32 @@ void RedditSplitter::MakeOutFNameMap() {
   OutFNmMap.AddDat(subscription, "subscriptions");
 }
 
-void RedditSplitter::split_on(const TStr& on) {
-  create_target_dirs();
-
-  TStr fname;
-  for (TFFile file(input_dir); file.Next(fname);) {
-    RedditSplitter::data_set_type type = find_data_set_type(file.GetFNm());
-    process_dataset(fname, type, on);
-  }
-
-}
-
-void RedditSplitter::split_by_user() {
+void RedditSplitter::SplitByUser() {
   split_on("user_id");
 }
 
-void RedditSplitter::split_by_submission() {
+void RedditSplitter::SplitBySubmission() {
   // todo: something else...
 }
 
-void RedditSplitter::create_target_dirs() {
-  for(int i = 0; i < NumSplits; i++) {
-    TStr dirname = TStr::Fmt("%s/%05d", output_dir.CStr(), i);
-    CreateDirectory(dirname.CStr(), NULL);
-    target_dirs.Add(dirname);
+void RedditSplitter::split_on(const TStr& on) {
+  CreateTargetDirs();
+
+  TStr FNm;
+  printf("In dir: %s\n", InDir.CStr());
+  for (TFFile FFile(InDir); FFile.Next(FNm);) {
+    printf("File: %s\n", FNm.CStr());
+    data_set_type type = GetDataSetType(FFile.GetFNm()); // todo: HERE BE THE PROBLEM
+    if (type == unknown) {
+      printf("Data set type for \"%s\" unknown. Skipping.", FNm.CStr());
+    }
+    printf("Splitting: %s, on: %s...", FNm.CStr(), on.CStr());
+    ProcessDataSet(FNm, type, on);
+    printf("Done.\n");
   }
 }
 
-void RedditSplitter::write_tables_out(const TVec<PTable>& tables, const TStr& prefix) {
-  for(int i = 0; i < tables.Len(); i ++ ) {
-    const TStr& target_dir = target_dirs[i];
-    TStr FName = TStr::Fmt("%s/%s", target_dir.CStr(), prefix.CStr());
-    tables[i]->SaveSS(FName);
-  }
-}
-
-void RedditSplitter::process_dataset(const TStr &DataSetDir, data_set_type type, const TStr &on) {
+void RedditSplitter::ProcessDataSet(const TStr &DataSetDir, data_set_type type, const TStr &on) {
   printf("Processing: %s\n", DataSetDir.CStr());
 
   Schema schema = SchemaTable.GetDat(type);
@@ -134,7 +124,26 @@ void RedditSplitter::process_dataset(const TStr &DataSetDir, data_set_type type,
   printf("Did not process: %s\n", DataSetDir.CStr());
 }
 
-RedditSplitter::data_set_type RedditSplitter::find_data_set_type(const TStr& file) {
+void RedditSplitter::write_tables_out(const TVec<PTable>& Tables, const TStr& FNm) {
+  for(int i = 0; i < Tables.Len(); i ++ ) {
+    const TStr& TargetDir = TargetDirs[i];
+    TStr Path = TStr::Fmt("%s/%s", TargetDir.CStr(), FNm.CStr());
+    Tables[i]->SaveSS(Path);
+  }
+}
+
+void RedditSplitter::CreateTargetDirs() {
+  printf("Creating target directories... ");
+  CreateDirectory(OutDir.CStr(), NULL);
+  for(int i = 0; i < NumSplits; i++) {
+    TStr DirNm = TStr::Fmt("%s/%05d", OutDir.CStr(), i);
+    CreateDirectory(DirNm.CStr(), NULL);
+    TargetDirs.Add(DirNm);
+  }
+  printf("Done.\n");
+}
+
+RedditSplitter::data_set_type RedditSplitter::GetDataSetType(const TStr &file) {
   if (file.SearchStr("user") != -1) return RedditSplitter::user;
   if (file.SearchStr("vote") != -1) return RedditSplitter::vote;
   if (file.SearchStr("comment") != -1) return RedditSplitter::comment;
