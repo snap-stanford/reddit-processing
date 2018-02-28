@@ -4,17 +4,17 @@ set(CMAKE_CXX_STANDARD 11)
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
 
-find_package(Snap REQUIRED)
-if (NOT Snap_FOUND)
-    message(FATAL_ERROR "Package Snap not found")
+find_package(SNAP REQUIRED)
+if (NOT SNAP_FOUND)
+    message(FATAL_ERROR "Package SNAP not found")
 else()
-    message(STATUS "Snap Found: " ${Snap_INCLUDE_DIRS})
-endif (NOT Snap_FOUND)
+    message(STATUS "SNAP Found: " ${SNAP_INCLUDE_DIRS})
+endif (NOT SNAP_FOUND)
 
-add_definitions(${Snap_DEFINITIONS})
-include_directories(${Snap_INCLUDE_DIRS})
-message("Snap Include: " ${Snap_INCLUDE_DIRS})
-set(LIBRARIES ${LIBRARIES} ${Snap_LIBRARIES})
+add_definitions(${SNAP_DEFINITIONS})
+include_directories(${SNAP_INCLUDE_DIRS})
+message("Snap Include: " ${SNAP_INCLUDE_DIRS})
+set(LIBRARIES ${LIBRARIES} ${SNAP_LIBRARIES})
 
 include_directories(src include)
 
