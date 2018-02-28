@@ -32,13 +32,18 @@ private:
   TStr input_dir;
   TStr output_dir;
   const int num_splits;
-  RedditParser parser;
 
+  TVec<TStr> target_dirs;
+
+  THash<data_set_type, TStr> input_datasets;
+
+
+  void find_sub_directories();
   void create_target_dirs();
-  void write_tables_out();
+  void write_tables_out(const TVec<PTable>& tables, const TStr& prefix);
 
   void split_user_data();
-  void split_vote_data();
+  void split_vote_data(const TStr& dirname);
   void split_comment_data();
   void split_submission_data();
   void split_report_data();

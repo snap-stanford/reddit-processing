@@ -9,15 +9,13 @@ static inline bool is_first(const TStr &tfile) {
   return true;
 }
 
-void add_hashes(PTable& table, const TStr& on, int mod) {
-  TTable hashes;
+void add_hashes(PTable& table, const TStr& on, int NumSplits) {
+  table->AddIntCol("bucket");
   for (TRowIterator RowI = table->BegRI(); RowI < table->EndRI(); RowI++) {
-    TTableRow row;
-    row.AddStr(RowI.GetStrAttr("user_id"));
-    row.AddInt(RowI.GetStrAttr("user_id").GetPrimHashCd() % mod);
-    hashes.AddRow(row);
+    const TStr& uid = RowI.GetStrAttr("user_id");
+    int bucket = uid.GetSecHashCd() % NumSplits;
+    table->SetIntVal("bucket", RowI.GetRowIdx(), bucket);
   }
-  table->Join("user_id", hashes, "user_id"); // yeah i literally can't figure out a better way
 }
 
 TableSplitter::TableSplitter(const TStr& table_directory, const Schema& schema, const int num_splits)
@@ -30,6 +28,12 @@ TableSplitter::TableSplitter(const TStr& table_directory, const Schema& schema, 
 void TableSplitter::split_tables(const TStr &on) {
   TStr file_name;
   for (TFFile file(table_directory); file.Next(file_name);) {
+    PTable table = TTable::New();
+    for (int i = 0; i < num_splits; i++) {
+      PTable split = TTable::New(schema, &Context);
+      table->SelectAtomicConst("bucket", TInt(i), EQ, split);
+    }
+
     split_table(file_name, on);
   }
 }

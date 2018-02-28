@@ -6,7 +6,9 @@
 #include <Snap.h>
 #include "splitter.h"
 
-void test(int argc, char* argv[]);
+
+
+
 
 int main(int argc, char* argv[]) {
 
@@ -19,11 +21,6 @@ int main(int argc, char* argv[]) {
   const bool ByUser = Env.GetIfArgPrefixBool("-u", true, "Split by user");
   const bool BySub = Env.GetIfArgPrefixBool("-s", false, "Split by Subreddit");
   const bool test_it = Env.GetIfArgPrefixBool("-test", false, "Run tests");
-
-  if (test_it) { // todo: remove this
-    test(argc, argv);
-    return 0;
-  }
 
   Splitter splitter(InFNm, OutFNm, NumSplits);
   if (ByUser) {
