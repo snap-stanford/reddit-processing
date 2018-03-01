@@ -9,7 +9,7 @@ logger.setLevel(logging.DEBUG)
 
 
 def convert_csv_to_tsv(csv_in, tsv_out):
-	logging.info("Converting: %s ..." % csv_in)
+	logger.info("Converting: %s ..." % csv_in)
 	with open(csv_in, 'r') as fin:
 		with open(tsv_out, 'w') as fout:
 			csv.writer(fout, dialect='excel-tab').writerows(csv.reader(fin))
