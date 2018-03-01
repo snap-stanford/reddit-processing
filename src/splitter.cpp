@@ -45,7 +45,6 @@ void RedditSplitter::MakeSchemas() {
   removal_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
   removal_schema.Add(TPair<TStr, TAttrType>("sr_name", atStr));
   removal_schema.Add(TPair<TStr, TAttrType>("event_type", atStr));
-  removal_schema.Add(TPair<TStr, TAttrType>("post_type", atStr));
   removal_schema.Add(TPair<TStr, TAttrType>("target_fullname", atStr));
   removal_schema.Add(TPair<TStr, TAttrType>("target_type", atStr));
   removal_schema.Add(TPair<TStr, TAttrType>("user_type", atStr));
