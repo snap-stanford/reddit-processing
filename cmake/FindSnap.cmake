@@ -39,7 +39,7 @@ if (Snap_FOUND)
     set(Snap_INCLUDE_DIRS ${Snap_CORE} ${Snap_GLIB_CORE})
     set(Snap_DEFINITIONS)
     message(STATUS "Found Snap: " ${Snap_ROOT_DIR})
-else ()
+else()
     message(FATAL_ERROR "Package: Snap not found")
 endif (Snap_FOUND)
 

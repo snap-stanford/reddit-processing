@@ -9,7 +9,6 @@ if (APPLE)
 endif()
 
 find_package(Snap REQUIRED)
-
 add_definitions(${Snap_DEFINITIONS})
 include_directories(${Snap_INCLUDE_DIRS})
 set(LIBRARIES ${LIBRARIES} ${Snap_LIBRARIES})
@@ -30,9 +29,6 @@ else()
     SET(CMAKE_CXX_FLAGS "-std=c++11 -Ofast")
 endif()
 
-if (NOT APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 
 include_directories(src include)
