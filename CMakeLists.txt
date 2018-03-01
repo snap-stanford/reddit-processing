@@ -3,8 +3,8 @@ project(Reddit)
 set(CMAKE_CXX_STANDARD 11)
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-#set(CMAKE_C_COMPILER clang-omp CACHE STRING "C compiler" FORCE)
-#set(CMAKE_CXX_COMPILER clang-omp++ CACHE STRING "C++ compiler" FORCE)
+set(CMAKE_C_COMPILER /usr/local/Cellar/gcc@5/5.5.0_2/bin/gcc-5 CACHE STRING "C compiler" FORCE)
+set(CMAKE_CXX_COMPILER /usr/local/Cellar/gcc@5/5.5.0_2/bin/g++-5 CACHE STRING "C++ compiler" FORCE)
 
 find_package(Snap REQUIRED)
 
@@ -29,8 +29,9 @@ else()
 endif()
 
 if (NOT APPLE)
-    SET(CMAKE_CXX_FLAGS "-fopenmp")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 
 include_directories(src include)
 set(SOURCE

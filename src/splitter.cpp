@@ -107,11 +107,12 @@ void RedditSplitter::split_on(const TStr& on) {
   CreateTargetDirs();
 
   // Split each of the types
-  for (int id = 0; id < InDirNmMap.Len(); id++) {
-    data_set_type type = InDirNmMap.GetKey(id);
-    TStr DirNm = InDirNmMap.GetDat(type);
-    ProcessDataSet(DirNm, type, on);
-  }
+#pragma omp parallel for
+    for (int id = 0; id < InDirNmMap.Len(); id++) {
+      data_set_type type = InDirNmMap.GetKey(id);
+      TStr DirNm = InDirNmMap.GetDat(type);
+      ProcessDataSet(DirNm, type, on);
+    }
 }
 
 void RedditSplitter::ProcessDataSet(const TStr &DataSetDir, data_set_type type, const TStr &on) {

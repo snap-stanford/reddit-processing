@@ -4,6 +4,7 @@
  */
 
 #include <Snap.h>
+#include <omp.h>
 
 TVec<PTable> out_tables;
 
@@ -34,7 +35,7 @@ int main(int argc, char* argv[]) {
 //    printf("file: %s\n", fname.CStr());
 //  }
 
-
+  /*
   Schema user_schema;
   user_schema.Add(TPair<TStr, TAttrType>("registration_dt", atStr));
   user_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
@@ -58,6 +59,14 @@ int main(int argc, char* argv[]) {
 
   const char* fuckmeright = "/Users/jonpdeaton/Datasets/reddit/stanford_comment_data/stanford_comment_data000000000005.csv";
   PTable table = TTable::LoadSS(comment_schema, fuckmeright, &Context, ',', true);
+
+   */
+
+//#pragma omp parallel for
+//  for(int i = 0; i < 10; i++) {
+//    sleep(i % 3);
+//    printf("Hello! %d \n", i);
+//  }
 
   return 0;
 
