@@ -7,7 +7,6 @@ logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(messa
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-
 def convert_csv_to_tsv(csv_in, tsv_out):
 	logger.info("Converting: %s ..." % os.path.split(csv_in)[1])
 	with open(csv_in, 'r') as fin:
@@ -15,6 +14,8 @@ def convert_csv_to_tsv(csv_in, tsv_out):
 			csv.writer(fout, dialect='excel-tab').writerows(csv.reader(fin))
 	logger.info("Completed %s" % os.path.split(csv_in)[1])
 
+def convert_csv_to_tsv_unpack(args):
+	convert_csv_to_tsv(*args)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="CSV to TSV converter", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -24,7 +25,7 @@ def parse_args():
     io_options_group.add_argument('-o', "--output", help="Output directory")
 
     options_group = parser.add_argument_group("I/O Options")
-    options_group.add_argument('-b', '--batch-size', type=int, default=10, help="How many to process at once")
+    options_group.add_argument('-p', '--pool-size', type=int, default=10, help="Thread pool size")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
@@ -72,18 +73,9 @@ def main():
 		logger.warning("Found no CSV files to convert. Exiting.")
 		return
 
-	logger.debug("Processing in batches of %d" % args.batch_size)
-	procs = []
-	for csv_in, tsv_out in zip(input_csvs, output_csvs):
-		procs.append(mp.Process(target=convert_csv_to_tsv, args=[csv_in, tsv_out]))
-
-	num_batches = 1 + num_files / args.batch_size
-	for batch_index in xrange(num_batches):
-		start = batch_index * args.batch_size
-		end = min((1 + batch_index) * args.batch_size, num_files)
-		for p in procs[start:end]: p.start()
-		for p in procs[start:end]: p.join()
-
+	logger.debug("Processing with Thread-Pool of size %d" % args.pool_size)
+	pool = mp.Pool(args.pool_size)
+	pool.map(convert_csv_to_tsv_unpack, zip(input_csvs, output_csvs))
 	logger.debug("Conversion complete.")
 
 if __name__ == "__main__":
