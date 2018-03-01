@@ -98,9 +98,9 @@ void RedditSplitter::split_on(const TStr& on) {
 
   TStr FNm;
   printf("In dir: %s\n", InDir.CStr());
-  for (TFFile FFile(InDir); FFile.Next(FNm);) {
+  for (TFFile FFile(InDir.CStr()); FFile.Next(FNm);) {
     printf("File: %s\n", FNm.CStr());
-    data_set_type type = GetDataSetType(FFile.GetFNm()); // todo: HERE BE THE PROBLEM
+    data_set_type type = GetDataSetType(FFile.GetFNm());
     if (type == unknown) {
       printf("Data set type for \"%s\" unknown. Skipping.", FNm.CStr());
     }

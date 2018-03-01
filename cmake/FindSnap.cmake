@@ -6,8 +6,8 @@
 #  Snap_DEFINITIONS  - Compiler switches required for using Snap
 include(FindPackageHandleStandardArgs)
 
-set(Snap_ROOT_DIR $ENV{WORKSPACE_ROOT}/opt/snap)
-message(STATUS "Snap_ROOT_DIR: " ${Snap_ROOT_DIR}) # print which directory CMake is looking in.
+set(Snap_ROOT_DIR $ENV{WORKSPACE_ROOT}/opt/Snap)
+message(STATUS "Snap_ROOT_DIR: " ${Snap_ROOT_DIR})
 
 find_path(Snap_CORE
         NAMES "Snap.h"
@@ -40,7 +40,7 @@ if (Snap_FOUND)
     set(Snap_DEFINITIONS)
     message(STATUS "Snap Found: " ${Snap_INCLUDE_DIRS})
 else()
-    message(FATAL_ERROR "Package Snap not found")
+    message(FATAL_ERROR "Package: Snap not found")
 endif (Snap_FOUND)
 
 # Tell cmake GUIs to ignore the "local" variables.

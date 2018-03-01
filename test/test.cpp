@@ -27,12 +27,13 @@ int main(int argc, char* argv[]) {
   const bool BySub =    Env.GetIfArgPrefixBool("-s", false, "Split by Subreddit");
   const bool title =    Env.GetIfArgPrefixBool("-title", false, "Has title row");
 
-  TStr endpoint_ts;
-  TStr user_id;
-  TStr sr_name;
-  TStr target_fullname;
-  TStr target_type;
-  TStr vote_direction;
+  // Y U NO WORK
+  printf("iterating through: %s\n", in_file.CStr());
+  TStr search = TStr::Fmt("%s/*", in_file.CStr());
+  TStr fname;
+  for (TFFile FFile(search); FFile.Next(fname);) {
+    printf("file: %s\n", fname.CStr());
+  }
 
   Schema VoteS;
   VoteS.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));

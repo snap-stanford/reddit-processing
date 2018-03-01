@@ -17,11 +17,6 @@ int main(int argc, char* argv[]) {
   const bool ByUser =   Env.GetIfArgPrefixBool("-u", true, "Split by user");
   const bool BySub =    Env.GetIfArgPrefixBool("-s", false, "Split by submission");
 
-  if (TFile::Exists(InputDir)) {
-    printf("not exist");
-    return -1;
-  }
-
   RedditSplitter splitter(InputDir, OutDir, NumSplits);
   if (ByUser) {
     splitter.SplitByUser();

@@ -16,11 +16,7 @@ set(SOURCE
         include/splitter.h              src/splitter.cpp
         include/user-data.hpp           src/user-data.cpp
         include/reddit-parser.h         src/reddit-parser.cpp
-        src/table-splitter.cpp          include/table-splitter.hpp)
-
-set(OLD src/reddit-join.cpp
-        include/joiner.hpp              src/joiner.cpp)
-
+        include/table-splitter.hpp      src/table-splitter.cpp)
 
 set(TEST test/test.cpp)
 
