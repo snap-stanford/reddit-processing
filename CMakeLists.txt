@@ -10,7 +10,6 @@ find_package(Snap REQUIRED)
 
 add_definitions(${Snap_DEFINITIONS})
 include_directories(${Snap_INCLUDE_DIRS})
-message("Snap Include: " ${Snap_INCLUDE_DIRS})
 set(LIBRARIES ${LIBRARIES} ${Snap_LIBRARIES})
 
 find_package(OpenMP)

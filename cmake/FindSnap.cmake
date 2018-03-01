@@ -4,32 +4,32 @@
 #  Snap_INCLUDE_DIRS - The Snap include directories
 #  Snap_LIBRARIES    - The libraries needed to use Snap
 #  Snap_DEFINITIONS  - Compiler switches required for using Snap
-include(FindPackageHandleStandardArgs)
 
-set(Snap_ROOT_DIR $ENV{WORKSPACE_ROOT}/opt/Snap)
-message(STATUS "Snap_ROOT_DIR: " ${Snap_ROOT_DIR})
+find_path(Snap_ROOT_DIR
+        NAMES "snap-core" "glib-core"
+        HINTS $ENV{WORKSPACE_ROOT}/opt/Snap $ENV{WORKSPACE_ROOT}/afs/cs.stanford.edu/u/jdeaton/repos/snap
+        DOC "Snap root directory")
 
 find_path(Snap_CORE
         NAMES "Snap.h"
         PATH_SUFFIXES snap-core
         HINTS ${Snap_ROOT_DIR}
         DOC "The Snap include directory")
-message(STATUS "Snap core: " ${Snap_CORE})
 
 find_path(Snap_GLIB_CORE
         NAMES "base.h"
         PATH_SUFFIXES glib-core
         HINTS ${Snap_ROOT_DIR}
         DOC "The Snap GLib include directory")
-message(STATUS "Glib core: " ${Snap_GLIB_CORE})
 
 find_library(Snap_LIBRARY
         NAMES libsnap.a
         HINTS ${Snap_ROOT_DIR}/snap-core
         DOC "The Snap library")
-message(STATUS "Snap Library: " ${Snap_LIBRARY})
 
+include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Snap DEFAULT_MSG
+        Snap_ROOT_DIR
         Snap_CORE
         Snap_GLIB_CORE
         Snap_LIBRARY)
@@ -38,8 +38,8 @@ if (Snap_FOUND)
     set(Snap_LIBRARIES ${Snap_LIBRARY})
     set(Snap_INCLUDE_DIRS ${Snap_CORE} ${Snap_GLIB_CORE})
     set(Snap_DEFINITIONS)
-    message(STATUS "Snap Found: " ${Snap_INCLUDE_DIRS})
-else()
+    message(STATUS "Found Snap: " ${Snap_ROOT_DIR})
+else ()
     message(FATAL_ERROR "Package: Snap not found")
 endif (Snap_FOUND)
 
