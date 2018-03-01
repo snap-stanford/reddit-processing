@@ -10,8 +10,18 @@ include_directories(${Snap_INCLUDE_DIRS})
 message("Snap Include: " ${Snap_INCLUDE_DIRS})
 set(LIBRARIES ${LIBRARIES} ${Snap_LIBRARIES})
 
-include_directories(src include)
+# cmake -DCMAKE_BUILD_TYPE=Debug ..
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Mode: Debug")
+    SET(CMAKE_CXX_FLAGS "-std=c++11 -g -O0")
+else()
+    message(STATUS "Mode: Release")
+    SET(CMAKE_CXX_FLAGS "-std=c++11 -Ofast")
+endif()
 
+
+
+include_directories(src include)
 set(SOURCE
         include/splitter.h              src/splitter.cpp
         include/user-data.hpp           src/user-data.cpp

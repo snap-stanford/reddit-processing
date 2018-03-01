@@ -32,6 +32,7 @@ public:
   explicit RedditSplitter(const TStr& InDir, const TStr& OutDir, int NumSplits)
     : InDir(InDir), OutDir(OutDir), NumSplits(NumSplits) {
     MakeSchemas(); // make all the schemas for each data set type
+    MakeInputDirNameMap(); //
     MakeOutFNameMap(); // make all of the file names for each data set
   }
 
@@ -46,6 +47,7 @@ private:
 
   THash<data_set_type, Schema, HashDataType> SchemaTable;
   THash<data_set_type, TStr, HashDataType> OutFNmMap;
+  THash<data_set_type, TStr, HashDataType> InDirNmMap;
 
   void split_on(const TStr& on);
 
@@ -56,6 +58,7 @@ private:
   void ProcessDataSet(const TStr &DataSetDir, data_set_type type, const TStr &on);
 
   void MakeSchemas();
+  void MakeInputDirNameMap();
   void MakeOutFNameMap();
 };
 

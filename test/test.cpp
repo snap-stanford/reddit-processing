@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
   Env =  TEnv(argc, argv, TNotify::StdNotify);
   Env.PrepArgs(TStr::Fmt("Reddit splitter. build: %s, %s. Time: %s", __TIME__, __DATE__, TExeTm::GetCurTm()));
 
-  const TStr in_file =  Env.GetIfArgPrefixStr("-i:", "", "Input file");
+  const TStr InFNm =  Env.GetIfArgPrefixStr("-i:", "", "Input file");
   const TStr OutFNm =   Env.GetIfArgPrefixStr("-o:", "test.out", "Output file");
   const int NumSplits = Env.GetIfArgPrefixInt("-n:", 1024, "Number of splits to make ");
   const bool ByUser =   Env.GetIfArgPrefixBool("-u", true, "Split by user");
@@ -28,38 +28,63 @@ int main(int argc, char* argv[]) {
   const bool title =    Env.GetIfArgPrefixBool("-title", false, "Has title row");
 
   // Y U NO WORK
-  printf("iterating through: %s\n", in_file.CStr());
-  TStr search = TStr::Fmt("%s/*", in_file.CStr());
-  TStr fname;
-  for (TFFile FFile(search); FFile.Next(fname);) {
-    printf("file: %s\n", fname.CStr());
-  }
+//  printf("iterating through: %s\n", InFNm.CStr());
+//  TStr fname;
+//  for (TFFile FFile(InFNm, true); FFile.Next(fname);) {
+//    printf("file: %s\n", fname.CStr());
+//  }
 
-  Schema VoteS;
-  VoteS.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
-  VoteS.Add(TPair<TStr, TAttrType>("user_id", atStr));
-  VoteS.Add(TPair<TStr, TAttrType>("sr_name", atStr));
-  VoteS.Add(TPair<TStr, TAttrType>("target_fullname", atStr));
-  VoteS.Add(TPair<TStr, TAttrType>("target_type", atStr));
-  VoteS.Add(TPair<TStr, TAttrType>("vote_direction", atStr));
 
-  printf("Loading table...\n");
+  Schema user_schema;
+  user_schema.Add(TPair<TStr, TAttrType>("registration_dt", atStr));
+  user_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
+  user_schema.Add(TPair<TStr, TAttrType>("registration_country_code", atStr));
+  user_schema.Add(TPair<TStr, TAttrType>("is_suspended", atStr));
   TTableContext Context; // Read input from file and store in table
-  PTable table = TTable::LoadSS(VoteS, in_file, &Context, ',', title);
-  printf("Loaded.\n");
+//  PTable table = TTable::LoadSS(user_schema, InFNm, &Context, ',', title);
 
-  printf("Adding new column...\n");
-  add_bucket_column(table, NumSplits);
-  printf("New column added.\n");
 
-  printf("selecting.\n");
-  PTable split = TTable::New(VoteS, &Context);
-  table->SelectAtomicConst("bucket", TInt(0), EQ, split);
-  printf("selected\n");
+  TStr endpoint_ts,user_id,sr_name,comment_fullname,
+    comment_body,parent_fullname,post_fullname;
 
-  printf("Saving table...\n");
-  split->SaveSS(OutFNm);
-  printf("Saved.\n");
+  Schema comment_schema;
+  comment_schema.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
+  comment_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
+  comment_schema.Add(TPair<TStr, TAttrType>("sr_name", atStr));
+  comment_schema.Add(TPair<TStr, TAttrType>("comment_fullname", atStr));
+  comment_schema.Add(TPair<TStr, TAttrType>("comment_body", atStr));
+  comment_schema.Add(TPair<TStr, TAttrType>("parent_fullname", atStr));
+  comment_schema.Add(TPair<TStr, TAttrType>("post_fullname", atStr));
+
+  const char* fuckmeright = "/Users/jonpdeaton/Datasets/reddit/stanford_comment_data/stanford_comment_data000000000005.csv";
+  PTable table = TTable::LoadSS(comment_schema, fuckmeright, &Context, ',', true);
+
+  return 0;
+
+//  Schema VoteS;
+//  VoteS.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
+//  VoteS.Add(TPair<TStr, TAttrType>("user_id", atStr));
+//  VoteS.Add(TPair<TStr, TAttrType>("sr_name", atStr));
+//  VoteS.Add(TPair<TStr, TAttrType>("target_fullname", atStr));
+//  VoteS.Add(TPair<TStr, TAttrType>("target_type", atStr));
+//  VoteS.Add(TPair<TStr, TAttrType>("vote_direction", atStr));
+//
+//  printf("Loading table...\n");
+//  PTable table = TTable::LoadSS(VoteS, InFNm, &Context, ',', title);
+//  printf("Loaded.\n");
+//
+//  printf("Adding new column...\n");
+//  add_bucket_column(table, NumSplits);
+//  printf("New column added.\n");
+//
+//  printf("selecting.\n");
+//  PTable split = TTable::New(VoteS, &Context);
+//  table->SelectAtomicConst("bucket", TInt(0), EQ, split);
+//  printf("selected\n");
+//
+//  printf("Saving table...\n");
+//  split->SaveSS(OutFNm);
+//  printf("Saved.\n");
 
   return 0;
 }

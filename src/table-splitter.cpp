@@ -23,14 +23,18 @@ TableSplitter::TableSplitter(const TStr& TableDir, const Schema& schema, const i
 void TableSplitter::SplitTables(const TStr &on) {
   TStr FNm;
   for (TFFile FFile(TableDir); FFile.Next(FNm);) { // Loop through all table parts
-    bool IsHead = IsFirst(FNm);
-    PTable TablePart = TTable::LoadSS(schema, FNm, &Context, IsHead);
+    printf("Reading: %s\n", FNm.CStr());
+//    bool IsHead = IsFirst(FNm);
+    bool IsHead = true;
+    PTable TablePart = TTable::LoadSS(schema, FNm, &Context, ',', IsHead);
+    printf("Processing...");
     AddBucketAssignment(TablePart, on, NumSplits);
     for (int i = 0; i < NumSplits; i++) {
       PTable split = TTable::New(schema, &Context);
       TablePart->SelectAtomicConst(BucketColNm, TInt(i), EQ, split);
       out_tables[i]->UnionAllInPlace(split); // concatenate the tables
     }
+    printf("Done.\n");
   }
 }
 

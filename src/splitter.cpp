@@ -51,19 +51,19 @@ void RedditSplitter::MakeSchemas() {
   removal_schema.Add(TPair<TStr, TAttrType>("user_type", atStr));
 
   Schema report_schema;
-  removal_schema.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
-  removal_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
-  removal_schema.Add(TPair<TStr, TAttrType>("sr_name", atStr));
-  removal_schema.Add(TPair<TStr, TAttrType>("target_fullname", atStr));
-  removal_schema.Add(TPair<TStr, TAttrType>("target_type", atStr));
-  removal_schema.Add(TPair<TStr, TAttrType>("process_notes", atStr));
-  removal_schema.Add(TPair<TStr, TAttrType>("details_text", atStr));
+  report_schema.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
+  report_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
+  report_schema.Add(TPair<TStr, TAttrType>("sr_name", atStr));
+  report_schema.Add(TPair<TStr, TAttrType>("target_fullname", atStr));
+  report_schema.Add(TPair<TStr, TAttrType>("target_type", atStr));
+  report_schema.Add(TPair<TStr, TAttrType>("process_notes", atStr));
+  report_schema.Add(TPair<TStr, TAttrType>("details_text", atStr));
 
   Schema subscription_schema;
-  removal_schema.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
-  removal_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
-  removal_schema.Add(TPair<TStr, TAttrType>("sr_name", atStr));
-  removal_schema.Add(TPair<TStr, TAttrType>("event_type", atStr));
+  subscription_schema.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
+  subscription_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
+  subscription_schema.Add(TPair<TStr, TAttrType>("sr_name", atStr));
+  subscription_schema.Add(TPair<TStr, TAttrType>("event_type", atStr));
 
   // Add all of the schemas to the hash map for use elsewhere
   SchemaTable.AddDat(user, user_schema);
@@ -73,6 +73,16 @@ void RedditSplitter::MakeSchemas() {
   SchemaTable.AddDat(removal, removal_schema);
   SchemaTable.AddDat(report, report_schema);
   SchemaTable.AddDat(subscription, subscription_schema);
+}
+
+void RedditSplitter::MakeInputDirNameMap() {
+  InDirNmMap.AddDat(user, TStr::Fmt("%s/stanford_user_data/", InDir.CStr()));
+  InDirNmMap.AddDat(vote, TStr::Fmt("%s/stanford_vote_data/", InDir.CStr()));
+  InDirNmMap.AddDat(comment, TStr::Fmt("%s/stanford_comment_data/", InDir.CStr()));
+  InDirNmMap.AddDat(submission, TStr::Fmt("%s/stanford_submission_data/", InDir.CStr()));
+  InDirNmMap.AddDat(removal, TStr::Fmt("%s/stanford_removal_data/", InDir.CStr()));
+  InDirNmMap.AddDat(report, TStr::Fmt("%s/stanford_report_data/", InDir.CStr()));
+  InDirNmMap.AddDat(subscription, TStr::Fmt("%s/stanford_subscription_data/", InDir.CStr()));
 }
 
 void RedditSplitter::MakeOutFNameMap() {
@@ -96,23 +106,15 @@ void RedditSplitter::SplitBySubmission() {
 void RedditSplitter::split_on(const TStr& on) {
   CreateTargetDirs();
 
-  TStr FNm;
-  printf("In dir: %s\n", InDir.CStr());
-  for (TFFile FFile(InDir.CStr()); FFile.Next(FNm);) {
-    printf("File: %s\n", FNm.CStr());
-    data_set_type type = GetDataSetType(FFile.GetFNm());
-    if (type == unknown) {
-      printf("Data set type for \"%s\" unknown. Skipping.", FNm.CStr());
-    }
-    printf("Splitting: %s, on: %s...", FNm.CStr(), on.CStr());
-    ProcessDataSet(FNm, type, on);
-    printf("Done.\n");
+  // Split each of the types
+  for (int id = 0; id < InDirNmMap.Len(); id++) {
+    data_set_type type = InDirNmMap.GetKey(id);
+    TStr DirNm = InDirNmMap.GetDat(type);
+    ProcessDataSet(DirNm, type, on);
   }
 }
 
 void RedditSplitter::ProcessDataSet(const TStr &DataSetDir, data_set_type type, const TStr &on) {
-  printf("Processing: %s\n", DataSetDir.CStr());
-
   Schema schema = SchemaTable.GetDat(type);
   const TStr OutFNm = OutFNmMap.GetDat(type);
 
