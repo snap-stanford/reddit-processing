@@ -3,8 +3,10 @@ project(Reddit)
 set(CMAKE_CXX_STANDARD 11)
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-set(CMAKE_C_COMPILER /usr/local/Cellar/gcc@5/5.5.0_2/bin/gcc-5 CACHE STRING "C compiler" FORCE)
-set(CMAKE_CXX_COMPILER /usr/local/Cellar/gcc@5/5.5.0_2/bin/g++-5 CACHE STRING "C++ compiler" FORCE)
+if (APPLE)
+    set(CMAKE_C_COMPILER /usr/local/Cellar/gcc@5/5.5.0_2/bin/gcc-5 CACHE STRING "C compiler" FORCE)
+    set(CMAKE_CXX_COMPILER /usr/local/Cellar/gcc@5/5.5.0_2/bin/g++-5 CACHE STRING "C++ compiler" FORCE)
+endif()
 
 find_package(Snap REQUIRED)
 
