@@ -44,7 +44,6 @@ int main(int argc, char* argv[]) {
   TTableContext Context; // Read input from file and store in table
 //  PTable table = TTable::LoadSS(user_schema, InFNm, &Context, ',', title);
 
-
   Schema comment_schema;
   comment_schema.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
   comment_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
@@ -55,7 +54,7 @@ int main(int argc, char* argv[]) {
   comment_schema.Add(TPair<TStr, TAttrType>("post_fullname", atStr));
 
   printf("Loading table...");
-  PTable table = TTable::LoadSS(comment_schema, InFNm, &Context, ',', true);
+  PTable table = TTable::LoadSS(comment_schema, InFNm, &Context, ' ', true);
   printf("Loaded.\n");
 
 //#pragma omp parallel for
