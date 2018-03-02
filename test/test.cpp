@@ -45,9 +45,6 @@ int main(int argc, char* argv[]) {
 //  PTable table = TTable::LoadSS(user_schema, InFNm, &Context, ',', title);
 
 
-  TStr endpoint_ts,user_id,sr_name,comment_fullname,
-    comment_body,parent_fullname,post_fullname;
-
   Schema comment_schema;
   comment_schema.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
   comment_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
@@ -57,8 +54,9 @@ int main(int argc, char* argv[]) {
   comment_schema.Add(TPair<TStr, TAttrType>("parent_fullname", atStr));
   comment_schema.Add(TPair<TStr, TAttrType>("post_fullname", atStr));
 
-  const char* fuckmeright = "/Users/jonpdeaton/Datasets/reddit/stanford_comment_data/stanford_comment_data000000000000.csv";
-  PTable table = TTable::LoadSS(comment_schema, fuckmeright, &Context, ',', true);
+  printf("Loading table...");
+  PTable table = TTable::LoadSS(comment_schema, InFNm, &Context, ',', true);
+  printf("Loaded.\n");
 
 //#pragma omp parallel for
 //  for(int i = 0; i < 10; i++) {
