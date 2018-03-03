@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 import csv, sys, os
 import logging, argparse
 import multiprocessing as mp
@@ -50,11 +50,11 @@ def main():
 
 	logger.debug("Input directory: %s" % args.input)
 	if not os.path.exists(args.input):
-		logger.error("Input directory: %s not found.")
+		logger.error("Input directory: %s not found." % args.input)
 		raise
 
 	if not os.path.exists(args.output):
-		logger.debug("Output directory: %d did not exist. Creating it...")
+		logger.debug("Output directory: %s did not exist. Creating it..." % args.output)
 		os.makedirs(args.output)
 	else:
 		logger.debug("Output directory: %s" % args.output)
