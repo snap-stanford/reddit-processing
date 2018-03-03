@@ -33,7 +33,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 
 include_directories(src include)
 set(SOURCE
-        include/splitter.h              src/splitter.cpp
+        include/splitter.hpp src/splitter.cpp
         include/reddit-parser.hpp       src/reddit-parser.cpp
         include/table-splitter.hpp      src/table-splitter.cpp)
 

@@ -10,7 +10,11 @@
 class RedditParser {
 
 public:
-  RedditParser();
+  explicit RedditParser(const TStr& InDir) {
+    MakeSchemas();
+    MakeInputDirNameMap();
+  }
+
   enum data_set_type {
     user,
     vote,
@@ -30,7 +34,16 @@ public:
   };
 
   THash<data_set_type, Schema, HashDataType> SchemaTable;
+  THash<data_set_type, TStr, HashDataType> InDirNmMap;
+
+private:
+  const TStr InDir;
+
+  void MakeSchemas();
+  void MakeInputDirNameMap();
 };
+
+
 
 
 #endif //REDDIT_REDDIT_PARSER_HPP

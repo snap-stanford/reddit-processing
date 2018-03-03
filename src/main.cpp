@@ -4,7 +4,7 @@
  */
 
 #include <Snap.h>
-#include "splitter.h"
+#include "splitter.hpp"
 
 int main(int argc, char* argv[]) {
 

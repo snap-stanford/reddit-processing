@@ -4,7 +4,19 @@
 
 #include "reddit-parser.hpp"
 
-RedditParser::RedditParser() {
+RedditParser::data_set_type GetDataSetType(const TStr &file) {
+  if (file.SearchStr("user") != -1) return RedditParser::user;
+  if (file.SearchStr("vote") != -1) return RedditParser::vote;
+  if (file.SearchStr("comment") != -1) return RedditParser::comment;
+  if (file.SearchStr("submissions") != -1) return RedditParser::submission;
+  if (file.SearchStr("removal") != -1) return RedditParser::removal;
+  if (file.SearchStr("report") != -1) return RedditParser::report;
+  if (file.SearchStr("subscription") != -1) return RedditParser::subscription;
+  return RedditParser::unknown;
+}
+
+
+void RedditParser::MakeSchemas() {
   Schema user_schema;
   user_schema.Add(TPair<TStr, TAttrType>("registration_dt", atStr));
   user_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
@@ -70,4 +82,14 @@ RedditParser::RedditParser() {
   SchemaTable.AddDat(removal, removal_schema);
   SchemaTable.AddDat(report, report_schema);
   SchemaTable.AddDat(subscription, subscription_schema);
+}
+
+void RedditParser::MakeInputDirNameMap() {
+  InDirNmMap.AddDat(user, TStr::Fmt("%s/stanford_user_data/", InDir.CStr()));
+  InDirNmMap.AddDat(vote, TStr::Fmt("%s/stanford_vote_data/", InDir.CStr()));
+  InDirNmMap.AddDat(comment, TStr::Fmt("%s/stanford_comment_data/", InDir.CStr()));
+  InDirNmMap.AddDat(submission, TStr::Fmt("%s/stanford_submission_data/", InDir.CStr()));
+  InDirNmMap.AddDat(removal, TStr::Fmt("%s/stanford_removal_data/", InDir.CStr()));
+  InDirNmMap.AddDat(report, TStr::Fmt("%s/stanford_report_data/", InDir.CStr()));
+  InDirNmMap.AddDat(subscription, TStr::Fmt("%s/stanford_subscription_data/", InDir.CStr()));
 }

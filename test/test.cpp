@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
   comment_schema.Add(TPair<TStr, TAttrType>("post_fullname", atStr));
 
   printf("Loading table...");
-  PTable table = TTable::LoadSS(comment_schema, InFNm, &Context, ' ', true);
+  PTable table = TTable::LoadSS(comment_schema, InFNm, &Context, '\t', true);
   printf("Loaded.\n");
 
 //#pragma omp parallel for
