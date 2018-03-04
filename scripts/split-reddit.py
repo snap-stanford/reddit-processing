@@ -9,60 +9,67 @@ logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(messa
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-hash = lambda s: int(hashlib.md5(s.encode()).hexdigest(),16)
+input_directory = ""
+output_directory = ""
+num_splits = 1024
+target_directories = {}
+
+def hash(s):
+    return int(hashlib.md5(s.encode()).hexdigest(), 16)
 
 
-class Splitter:
+def get_bucket(s):
+    return hash(s) % num_splits
 
-    def __init__(self, input_directory, output_directory, num_splits):
-        self.input_directory = input_directory
-        self.output_directory = output_directory
-        self.num_splits = num_splits
-        self.get_bucket = lambda s: hash(s) % num_splits
-        self.target_directories = {}
 
-    def split(self, on):
-        logger.debug("Creating target directories...")
-        self.__create_target_directories()
-        logger.debug("Target directories created.")
+def split(on):
+    logger.debug("Creating target directories...")
+    create_target_directories()
+    logger.debug("Target directories created.")
 
-        data_sets = os.listdir(self.input_directory)
-        for data_set in data_sets:
-            data_set_dir = os.path.join(self.input_directory, data_set)
-            if not os.path.isdir(data_set_dir): continue
-            logger.info("Splitting data-set: %s" % data_set)
-            self.__split_data_set(on, data_set_dir)
+    data_sets = os.listdir(input_directory)
+    for data_set in data_sets:
+        data_set_dir = os.path.join(input_directory, data_set)
+        if not os.path.isdir(data_set_dir): continue
+        logger.info("Splitting data-set: %s" % data_set)
+        split_data_set(on, data_set_dir, data_set)
 
-    def __split_data_set(self, on, data_set_path):
 
-        splits = [pd.DataFrame() for _ in range(self.num_splits)]
+def split_data_set(on, data_set_path, sub_dir_name):
+    targets = {}
+    for i in range(num_splits):
+        targets[i] = os.path.join(target_directories[i], sub_dir_name)
+        if not os.path.isdir(targets[i]):
+            os.mkdir(targets[i])
 
-        for file in os.listdir(data_set_path):
-            file_path = os.path.join(data_set_path, file)
-            if os.path.isdir(file_path): continue
-            logger.debug("Reading: %s" % file)
-            df = pd.read_csv(file_path)
-            logger.debug("Splitting: %s" % file)
-            df['bucket'] = df['user_id'].apply(self.get_bucket)
-            for bucket in range(self.num_splits):
-                logger.debug("bucket: %d" % bucket)
-                splits[bucket].append(df.loc[df['bucket'] == bucket])
+    data_files = map(lambda f: os.path.join(data_set_path, f), os.listdir(data_set_path))
 
-        logger.info("Writing outputs to: %s" % self.output_directory)
-        for i in self.target_directories:
-            split_directory = self.target_directories[i]
-            output_file = os.path.join(split_directory, os.path.split(data_set_path)[1])
-            splits[i].to_csv(output_file)
+    procs = []
+    for file in data_files:
+        procs.append(mp.Process(target=split_file, args=[on, file, targets]))
 
-    def __create_target_directories(self):
-        self.target_directories = {i: os.path.join(self.output_directory, "%05d" % i) for i in range(self.num_splits)}
-        for i in self.target_directories:
-            dir = self.target_directories[i]
-            if os.path.isfile(dir):
-                logger.error("File exists: %s" % dir)
-                exit(1)
-            if not os.path.isdir(dir):
-                os.mkdir(dir)  # create it if it doesn't exist
+
+def split_file(on, file_path, targets):
+    file_name = os.path.split(file_path)[1]
+    logger.debug("Reading: %s" % file_path)
+    df = pd.read_csv(file_path)
+    logger.debug("Splitting: %s" % file_path)
+    df['bucket'] = df[on].apply(get_bucket)
+    for i in range(num_splits):
+        output_file = os.path.join(targets[i], file_name)
+        df[df['bucket'] == i].to_csv(output_file)
+
+
+def create_target_directories():
+    global target_directories
+    target_directories = {i: os.path.join(output_directory, "%05d" % i) for i in range(num_splits)}
+    for i in target_directories:
+        target_dir = target_directories[i]
+        if os.path.isfile(target_dir):
+            logger.error("File exists: %s" % target_dir)
+            exit(1)
+        if not os.path.isdir(target_dir):
+            os.mkdir(target_dir)  # create it if it doesn't exist
 
 
 def parse_args():
@@ -109,8 +116,11 @@ def main():
     else:
         logger.debug("Output directory: %s" % args.output)
 
-    splitter = Splitter(args.input, args.output, args.num_splits)
-    splitter.split(args.on)
+    input_directory = args.input
+    output_directory = args.output
+    num_splits = args.num_splits
+    split(args.on)
+
 
 if __name__ == "__main__":
     main()
