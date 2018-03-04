@@ -12,6 +12,7 @@ logger.setLevel(logging.DEBUG)
 input_directory = ""
 output_directory = ""
 num_splits = 1024
+pool_size = 64
 target_directories = {}
 
 def hash(s):
@@ -44,18 +45,24 @@ def split_data_set(on, data_set_path, sub_dir_name):
 
     data_files = map(lambda f: os.path.join(data_set_path, f), os.listdir(data_set_path))
 
-    procs = []
-    for file in data_files:
-        procs.append(mp.Process(target=split_file, args=[on, file, targets]))
+    args = [(on, file, targets) for file in data_files]
+    pool = mp.Pool(pool_size)
+    pool.map(split_file_unpack, args)
 
-    for p in procs: p.start()
-    for p in procs: p.join()
+    # procs = []
+    # for file in data_files:
+    #     procs.append(mp.Process(target=split_file, args=[on, file, targets]))
+    #
+    # for p in procs: p.start()
+    # for p in procs: p.join()
 
+def split_file_unpack(args):
+    split_file(*args)
 
 def split_file(on, file_path, targets):
     file_name = os.path.split(file_path)[1]
     logger.debug("Reading: %s" % file_path)
-    df = pd.read_csv(file_path, engine='C')
+    df = pd.read_csv(file_path, engine='python')
     logger.debug("Splitting: %s" % file_path)
     df['bucket'] = df[on].apply(get_bucket)
     for i in range(num_splits):
@@ -85,7 +92,7 @@ def parse_args():
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split dataset")
     options_group.add_argument('-on', '--on', type=str, default="user_id", help="Field to split on")
-    options_group.add_argument('-p', '--pool-size', type=int, default=10, help="Thread pool size")
+    options_group.add_argument('-p', '--pool-size', type=int, default=64, help="Thread pool size")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
@@ -109,10 +116,11 @@ def parse_args():
 def main():
     args = parse_args()
 
-    global input_directory, output_directory, num_splits
+    global input_directory, output_directory, num_splits, pool_size
     input_directory = args.input
     output_directory = args.output
     num_splits = args.num_splits
+    pool_size = args.pool_size
 
     logger.debug("Input directory: %s" % input_directory)
     if os.path.isfile(input_directory)or not os.path.isdir(input_directory):
