@@ -56,7 +56,12 @@ class Splitter:
     def __create_target_directories(self):
         self.target_directories = {i: os.path.join(self.output_directory, "%05d" % i) for i in range(self.num_splits)}
         for i in self.target_directories:
-            os.mkdir(self.target_directories[i])
+            dir = self.target_directories[i]
+            if os.path.isfile(dir):
+                logger.error("File exists: %s" % dir)
+                exit(1)
+            if not os.path.isdir(dir):
+                os.mkdir(dir) # create it if it doesn't exist
 
 
 def parse_args():
