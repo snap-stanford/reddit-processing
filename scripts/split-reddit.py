@@ -43,10 +43,10 @@ class Splitter:
             logger.debug("Reading: %s" % file)
             df = pd.read_csv(file_path)
             logger.debug("Splitting: %s" % file)
+            df['bucket'] = df['user_id'].apply(self.get_bucket)
             for bucket in range(self.num_splits):
                 logger.debug("bucket: %d" % bucket)
-                part = df.loc[df[on].apply(self.get_bucket) == bucket]
-                splits[bucket].append(part)
+                splits[bucket].append(df.loc[df['bucket'] == bucket])
 
         logger.info("Writing outputs to: %s" % self.output_directory)
         for i in self.target_directories:
