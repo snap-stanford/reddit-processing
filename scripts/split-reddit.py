@@ -57,6 +57,7 @@ def parse_args():
     io_options_group.add_argument('-o', "--output", help="Output directory")
 
     options_group = parser.add_argument_group("Options")
+    options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split dataset")
     options_group.add_argument('-on', '--on', type=str, default="user_id", help="Field to split on")
     options_group.add_argument('-p', '--pool-size', type=int, default=10, help="Thread pool size")
 
@@ -92,7 +93,7 @@ def main():
     else:
         logger.debug("Output directory: %s" % args.output)
 
-    splitter = Splitter(args.input, args.output)
+    splitter = Splitter(args.input, args.output, args.num_splits)
     splitter.split(args.on)
 
 if __name__ == "__main__":
