@@ -48,11 +48,14 @@ def split_data_set(on, data_set_path, sub_dir_name):
     for file in data_files:
         procs.append(mp.Process(target=split_file, args=[on, file, targets]))
 
+    for p in procs: p.start()
+    for p in procs: p.join()
+
 
 def split_file(on, file_path, targets):
     file_name = os.path.split(file_path)[1]
     logger.debug("Reading: %s" % file_path)
-    df = pd.read_csv(file_path)
+    df = pd.read_csv(file_path, engine='C')
     logger.debug("Splitting: %s" % file_path)
     df['bucket'] = df[on].apply(get_bucket)
     for i in range(num_splits):
@@ -87,38 +90,41 @@ def parse_args():
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
     console_options_group.add_argument('--debug', action='store_true', help='Debug Console')
+    console_options_group.add_argument('-log', '--log', type=str, default=None, help="Logging file")
 
     args = parser.parse_args()
-
+    # ParserError
     if args.debug:
         logger.setLevel(logging.DEBUG)
-        logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+        logging.basicConfig(filename=args.log, format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
     elif args.verbose:
         logger.setLevel(logging.INFO)
-        logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+        logging.basicConfig(filename=args.log, format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
     else:
         logger.setLevel(logging.WARNING)
-        logging.basicConfig(format='[log][%(levelname)s] - %(message)s')
+        logging.basicConfig(filename=args.log, format='[log][%(levelname)s] - %(message)s')
     return args
 
 
 def main():
     args = parse_args()
 
-    logger.debug("Input directory: %s" % args.input)
-    if not os.path.exists(args.input):
-        logger.error("Input directory: %s not found." % args.input)
-        raise Exception()
-
-    if not os.path.exists(args.output):
-        logger.debug("Output directory: %s did not exist. Creating it..." % args.output)
-        os.makedirs(args.output)
-    else:
-        logger.debug("Output directory: %s" % args.output)
-
+    global input_directory, output_directory, num_splits
     input_directory = args.input
     output_directory = args.output
     num_splits = args.num_splits
+
+    logger.debug("Input directory: %s" % input_directory)
+    if os.path.isfile(input_directory)or not os.path.isdir(input_directory):
+        logger.error("Not a directory: %s" % input_directory)
+        raise Exception()
+
+    if not os.path.exists(args.output):
+        logger.debug("Output directory: %s did not exist. Creating it..." % output_directory)
+        os.makedirs(output_directory)
+    else:
+        logger.debug("Output directory: %s" % output_directory)
+
     split(args.on)
 
 
