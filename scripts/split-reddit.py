@@ -44,6 +44,7 @@ class Splitter:
             df = pd.read_csv(file_path)
             logger.debug("Splitting: %s" % file)
             for bucket in range(self.num_splits):
+                logger.debug("bucket: %d" % bucket)
                 part = df.loc[df[on].apply(self.get_bucket) == bucket]
                 splits[bucket].append(part)
 
@@ -61,11 +62,11 @@ class Splitter:
                 logger.error("File exists: %s" % dir)
                 exit(1)
             if not os.path.isdir(dir):
-                os.mkdir(dir) # create it if it doesn't exist
+                os.mkdir(dir)  # create it if it doesn't exist
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="CSV to TSV converter", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description="Split the Reddit data-set", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     io_options_group = parser.add_argument_group("I/O Options")
     io_options_group.add_argument('-i', "--input", help="Input directory")
