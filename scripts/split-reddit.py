@@ -22,10 +22,15 @@ class Splitter:
         self.target_directories = {}
 
     def split(self, on):
+        logger.debug("Creating target directories...")
         self.__create_target_directories()
+        logger.debug("Target directories created.")
+
         data_sets = os.listdir(self.input_directory)
         for data_set in data_sets:
             data_set_dir = os.path.join(self.input_directory, data_set)
+            if not os.path.isdir(data_set_dir): continue
+            logger.info("Splitting data-set: %s" % data_set)
             self.__split_data_set(on, data_set_dir)
 
     def __split_data_set(self, on, data_set_path):
@@ -33,11 +38,16 @@ class Splitter:
         splits = [pd.DataFrame() for _ in range(self.num_splits)]
 
         for file in os.listdir(data_set_path):
-            df = pd.read_csv(file)
+            file_path = os.path.join(data_set_path, file)
+            if os.path.isdir(file_path): continue
+            logger.debug("Reading: %s" % file)
+            df = pd.read_csv(file_path)
+            logger.debug("Splitting: %s" % file)
             for bucket in range(self.num_splits):
                 part = df.loc[df[on].apply(self.get_bucket) == bucket]
                 splits[bucket].append(part)
 
+        logger.info("Writing outputs to: %s" % self.output_directory)
         for i in self.target_directories:
             split_directory = self.target_directories[i]
             output_file = os.path.join(split_directory, os.path.split(data_set_path)[1])
