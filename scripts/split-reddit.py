@@ -5,10 +5,6 @@ import hashlib
 import multiprocessing as mp
 import pandas as pd
 
-logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 input_directory = ""
 output_directory = ""
 num_splits = 1024
@@ -45,19 +41,21 @@ def split_data_set(on, data_set_path, sub_dir_name):
 
     data_files = map(lambda f: os.path.join(data_set_path, f), os.listdir(data_set_path))
 
-    args = [(on, file, targets) for file in data_files]
-    pool = mp.Pool(pool_size)
-    pool.map(split_file_unpack, args)
+    # args = [(on, file, targets) for file in data_files]
+    # pool = mp.Pool(pool_size)
+    # pool.map(split_file_unpack, args)
 
-    # procs = []
-    # for file in data_files:
-    #     procs.append(mp.Process(target=split_file, args=[on, file, targets]))
-    #
-    # for p in procs: p.start()
-    # for p in procs: p.join()
+    procs = []
+    for file in data_files:
+        procs.append(mp.Process(target=split_file, args=[on, file, targets]))
+
+    for p in procs: p.start()
+    for p in procs: p.join()
+
 
 def split_file_unpack(args):
     split_file(*args)
+
 
 def split_file(on, file_path, targets):
     file_name = os.path.split(file_path)[1]
@@ -100,16 +98,22 @@ def parse_args():
     console_options_group.add_argument('-log', '--log', type=str, default=None, help="Logging file")
 
     args = parser.parse_args()
-    # ParserError
+
+    global logger
     if args.debug:
+        logging.basicConfig(filename=args.log, format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+        logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
-        logging.basicConfig(filename=args.log, format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+
     elif args.verbose:
-        logger.setLevel(logging.INFO)
         logging.basicConfig(filename=args.log, format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
     else:
-        logger.setLevel(logging.WARNING)
         logging.basicConfig(filename=args.log, format='[log][%(levelname)s] - %(message)s')
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.WARNING)
+
     return args
 
 
