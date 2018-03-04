@@ -27,7 +27,7 @@ void RedditSplitter::split_on(const TStr& on) {
   CreateTargetDirs();
 
   // Split each of the types
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int id = 0; id < Parser.InDirNmMap.Len(); id++) {
       RedditParser::data_set_type type = Parser.InDirNmMap.GetKey(id);
       TStr DirNm = Parser.InDirNmMap.GetDat(type);
@@ -45,8 +45,6 @@ void RedditSplitter::ProcessDataSet(const TStr &DataSetDir,
   splitter.SplitTables(on);
   const TVec<PTable>& split_tables = splitter.get_output_tables();
   write_tables_out(split_tables, OutFNm);
-
-  printf("Did not process: %s\n", DataSetDir.CStr());
 }
 
 void RedditSplitter::write_tables_out(const TVec<PTable>& Tables, const TStr& FNm) {

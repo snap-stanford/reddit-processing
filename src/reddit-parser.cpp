@@ -15,7 +15,6 @@ RedditParser::data_set_type GetDataSetType(const TStr &file) {
   return RedditParser::unknown;
 }
 
-
 void RedditParser::MakeSchemas() {
   Schema user_schema;
   user_schema.Add(TPair<TStr, TAttrType>("registration_dt", atStr));
@@ -85,11 +84,11 @@ void RedditParser::MakeSchemas() {
 }
 
 void RedditParser::MakeInputDirNameMap() {
-  InDirNmMap.AddDat(user, TStr::Fmt("%s/stanford_user_data/", InDir.CStr()));
-  InDirNmMap.AddDat(vote, TStr::Fmt("%s/stanford_vote_data/", InDir.CStr()));
-  InDirNmMap.AddDat(comment, TStr::Fmt("%s/stanford_comment_data/", InDir.CStr()));
-  InDirNmMap.AddDat(submission, TStr::Fmt("%s/stanford_submission_data/", InDir.CStr()));
-  InDirNmMap.AddDat(removal, TStr::Fmt("%s/stanford_removal_data/", InDir.CStr()));
-  InDirNmMap.AddDat(report, TStr::Fmt("%s/stanford_report_data/", InDir.CStr()));
-  InDirNmMap.AddDat(subscription, TStr::Fmt("%s/stanford_subscription_data/", InDir.CStr()));
+  InDirNmMap.AddDat(user, TStr::Fmt("%s/users/", InDir.CStr()));
+  InDirNmMap.AddDat(vote, TStr::Fmt("%s/votes/", InDir.CStr()));
+  InDirNmMap.AddDat(comment, TStr::Fmt("%s/comments/", InDir.CStr()));
+  InDirNmMap.AddDat(submission, TStr::Fmt("%s/submissions/", InDir.CStr()));
+  InDirNmMap.AddDat(removal, TStr::Fmt("%s/removals/", InDir.CStr()));
+  InDirNmMap.AddDat(report, TStr::Fmt("%s/reports/", InDir.CStr()));
+  InDirNmMap.AddDat(subscription, TStr::Fmt("%s/subscriptions/", InDir.CStr()));
 }

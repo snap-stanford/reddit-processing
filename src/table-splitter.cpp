@@ -13,7 +13,9 @@ static inline bool IsFirst(const TStr &tfile);
 
 
 
-TableSplitter::TableSplitter(const TStr& TableDir, const Schema& schema, const int NumSplits)
+TableSplitter::TableSplitter(const TStr& TableDir,
+                             const Schema& schema,
+                             const int NumSplits)
   : TableDir(TableDir), schema(schema), NumSplits(NumSplits) {
   for (int split = 0; split < NumSplits; ++split) {
     out_tables.Add(TTable::New(schema, &Context));
@@ -23,10 +25,10 @@ TableSplitter::TableSplitter(const TStr& TableDir, const Schema& schema, const i
 void TableSplitter::SplitTables(const TStr &on) {
   TStr FNm;
   for (TFFile FFile(TableDir); FFile.Next(FNm);) { // Loop through all table parts
-    printf("Reading: %s\n", FNm.CStr());
+    printf("Loading: %s\n", FNm.CStr());
 //    bool IsHead = IsFirst(FNm);
     bool IsHead = true;
-    PTable TablePart = TTable::LoadSS(schema, FNm, &Context, ',', IsHead);
+    PTable TablePart = TTable::LoadSS(schema, FNm, &Context, '\t', IsHead);
     printf("Processing...");
     AddBucketAssignment(TablePart, on, NumSplits);
     for (int i = 0; i < NumSplits; i++) {

@@ -4,6 +4,7 @@
  */
 
 #include <Snap.h>
+#include <reddit-parser.hpp>
 #include <omp.h>
 
 TVec<PTable> out_tables;
@@ -28,6 +29,7 @@ int main(int argc, char* argv[]) {
   const bool BySub =    Env.GetIfArgPrefixBool("-s", false, "Split by Subreddit");
   const bool title =    Env.GetIfArgPrefixBool("-title", false, "Has title row");
 
+  TTableContext Context;
   // Y U NO WORK
 //  printf("iterating through: %s\n", InFNm.CStr());
 //  TStr fname;
@@ -35,26 +37,11 @@ int main(int argc, char* argv[]) {
 //    printf("file: %s\n", fname.CStr());
 //  }
 
-
-  Schema user_schema;
-  user_schema.Add(TPair<TStr, TAttrType>("registration_dt", atStr));
-  user_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
-  user_schema.Add(TPair<TStr, TAttrType>("registration_country_code", atStr));
-  user_schema.Add(TPair<TStr, TAttrType>("is_suspended", atStr));
-  TTableContext Context; // Read input from file and store in table
-//  PTable table = TTable::LoadSS(user_schema, InFNm, &Context, ',', title);
-
-  Schema comment_schema;
-  comment_schema.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
-  comment_schema.Add(TPair<TStr, TAttrType>("user_id", atStr));
-  comment_schema.Add(TPair<TStr, TAttrType>("sr_name", atStr));
-  comment_schema.Add(TPair<TStr, TAttrType>("comment_fullname", atStr));
-  comment_schema.Add(TPair<TStr, TAttrType>("comment_body", atStr));
-  comment_schema.Add(TPair<TStr, TAttrType>("parent_fullname", atStr));
-  comment_schema.Add(TPair<TStr, TAttrType>("post_fullname", atStr));
+  RedditParser parser;
+  Schema schema = parser.SchemaTable.GetDat(RedditParser::submission);
 
   printf("Loading table...");
-  PTable table = TTable::LoadSS(comment_schema, InFNm, &Context, '\t', true);
+  PTable table = TTable::LoadSS(schema, InFNm, &Context, '\t', true);
   printf("Loaded.\n");
 
 //#pragma omp parallel for
@@ -65,14 +52,6 @@ int main(int argc, char* argv[]) {
 
   return 0;
 
-//  Schema VoteS;
-//  VoteS.Add(TPair<TStr, TAttrType>("endpoint_ts", atStr));
-//  VoteS.Add(TPair<TStr, TAttrType>("user_id", atStr));
-//  VoteS.Add(TPair<TStr, TAttrType>("sr_name", atStr));
-//  VoteS.Add(TPair<TStr, TAttrType>("target_fullname", atStr));
-//  VoteS.Add(TPair<TStr, TAttrType>("target_type", atStr));
-//  VoteS.Add(TPair<TStr, TAttrType>("vote_direction", atStr));
-//
 //  printf("Loading table...\n");
 //  PTable table = TTable::LoadSS(VoteS, InFNm, &Context, ',', title);
 //  printf("Loaded.\n");

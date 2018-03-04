@@ -42,5 +42,8 @@ set(TEST test/test.cpp)
 add_executable(split-reddit src/main.cpp  ${SOURCE})
 target_link_libraries(split-reddit ${LIBRARIES})
 
-add_executable(test-reddit ${TEST})
+add_executable(test-reddit ${TEST} ${SOURCE})
 target_link_libraries(test-reddit ${LIBRARIES})
+
+add_executable(problem test/problem.cpp ${SOURCE})
+target_link_libraries(problem ${LIBRARIES})

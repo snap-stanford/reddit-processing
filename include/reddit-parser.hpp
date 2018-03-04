@@ -10,10 +10,13 @@
 class RedditParser {
 
 public:
-  explicit RedditParser(const TStr& InDir) {
+
+  explicit RedditParser(const TStr& InDir) : InDir(InDir) {
     MakeSchemas();
     MakeInputDirNameMap();
   }
+
+  RedditParser() : RedditParser("") {}
 
   enum data_set_type {
     user,
