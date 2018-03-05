@@ -47,7 +47,7 @@ def split_by_submission():
     final_base_mapping = {**comment_base_mapping, **submission_base_mapping}
 
     # Now split the rest of the data while adding a column that
-    dirs_to_split = ["stanford_vote_data", "stanford_report_data", "stanford_removal_data"]
+    dirs_to_split = ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]
     data_sets = [os.path.join(input_directory, directory) for directory in dirs_to_split]
 
     for data_set_dir in data_sets:
@@ -62,7 +62,7 @@ def mapped_split(data_set_dir, mapped_col, result_column, value_mapping):
     ]
 
     pool = mp.Pool(pool_size)
-    pool.map(mapped_split_core, args_list)
+    pool.map(unpack_mapped_split_core, args_list)
 
 
 def unpack_mapped_split_core(args):
@@ -83,19 +83,36 @@ def mapped_split_core(data_set_dir, table_file_name, mapped_col, result_column, 
 
 def split_record_mapping(sub_directory, split_target_dir_mapping, on, col_mapped_from, col_mapped_to):
 
+    args_list = [
+        (sub_directory, table_fname, split_target_dir_mapping, on, col_mapped_from, col_mapped_to)
+        for table_fname in os.listdir(sub_directory)
+    ]
+
+    pool = mp.Pool(pool_size)
+    maps = pool.map(unkack_core, args_list)
+
     mapping = {}
-    for table_file_name in os.listdir(sub_directory):
-        table_file_path = os.path.join(sub_directory, table_file_name)
+    for d in maps:
+        mapping.update(d)
+    return mapping
 
-        logger.debug("Reading: %s" % table_file_name)
-        df = pd.read_csv(table_file_path, engine='python')
 
-        logger.debug("Mapping %s -> %s: %s" % (col_mapped_from, col_mapped_to, table_file_name))
-        mapping.update(dict(zip(df[col_mapped_from], df[col_mapped_to])))
+def unkack_core(args):
+    return core(*args)
 
-        logger.debug("Splitting: %s" % table_file_name)
-        output_file_map = {i: os.path.join(split_target_dir_mapping[i], table_file_name) for i in range(num_splits)}
-        split_data_frame(df, on, get_bucket, output_file_map, compress=compress)
+def core(sub_directory, table_file_name, split_target_dir_mapping, on, col_mapped_from, col_mapped_to):
+    mapping = {}
+    table_file_path = os.path.join(sub_directory, table_file_name)
+
+    logger.debug("Reading: %s" % table_file_name)
+    df = pd.read_csv(table_file_path, engine='python')
+
+    logger.debug("Mapping %s -> %s: %s" % (col_mapped_from, col_mapped_to, table_file_name))
+    mapping.update(dict(zip(df[col_mapped_from], df[col_mapped_to])))
+
+    logger.debug("Splitting: %s" % table_file_name)
+    output_file_map = {i: os.path.join(split_target_dir_mapping[i], table_file_name) for i in range(num_splits)}
+    split_data_frame(df, on, get_bucket, output_file_map, compress=compress)
 
     return mapping
 
