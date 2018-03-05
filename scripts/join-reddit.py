@@ -52,12 +52,6 @@ def join():
     for p in procs: p.start()
     for p in procs: p.join()
 
-def combine_and_group(joined_files):
-    df = pd.DataFrame()
-    for file in joined_files:
-        df.append(pd.read_csv(file))
-    df.sort_values(['user_id', 'endpoint_ts'], inplace=True)
-    df.to_csv()
 
 def join_dir(dir):
     logger.info("Joining directory: %s" % dir)
@@ -67,13 +61,14 @@ def join_dir(dir):
         next = rearrange(aggregate(data_set), get_data_type(data_set))
         df.append(next)
     df.sort_values(['user_id', 'endpoint_ts'], inplace=True)
-    df.to_csv(get_aggregate_file(dir), index=False, compression='gzip')
+    df.to_csv(get_aggregate_file(dir), index=False)
+
 
 def aggregate(directory):
     files = listdir(directory)
     df = pd.DataFrame()
     for file in files:
-        next = pd.read_csv(file)
+        next = pd.read_csv(file, compression='gzip')
         if 'bucket' in next.columns:
             next.drop('bucket', axis=1, inplace=True)
         df.append(next)
