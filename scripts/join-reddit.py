@@ -12,6 +12,8 @@ pool_size = 64
 target_directories = {}
 sequential = False
 
+final_columns = ['user_id', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
+
 
 class DataType(Enum):
     users = 1
@@ -60,14 +62,15 @@ def join():
 def join_dir(dir):
     logger.info("Joining directory: %s" % dir)
     data_sets = listdir(dir)
-    df = None
+    df = pd.DataFrame()
     for data_set in data_sets:
         logger.debug("Processing: %s" % data_set)
         next = rearrange(aggregate(data_set), get_data_type(data_set))
-        df = next if df is None else df.append(next)
+        df = df.append(next)
 
     logger.debug("Sorting: %s" % dir)
     df.sort_values(['user_id', 'endpoint_ts'], inplace=True)
+    df = df[final_columns]  # rearrange columns...
 
     final_output = get_aggregate_file(dir)
     logger.info("Writing result: %s" % final_output)
