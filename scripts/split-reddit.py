@@ -139,6 +139,7 @@ def main():
         logger.debug("Output directory: %s" % output_directory)
 
     if args.sub:  # split just this sub-directory
+        create_target_directories()
         split_data_set(args.on, os.path.join(args.input, args.sub), args.sub)
     else:
         split_all_data_sets(args.on)
