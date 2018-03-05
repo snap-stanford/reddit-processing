@@ -30,6 +30,7 @@ def split_by_submission():
     create_target_directories()
     logger.debug("Target directories created.")
 
+    logger.info("Processing submission tables...")
     # Must first split up the submission data because
     submissions_directory = os.path.join(input_directory, "stanford_submission_data")
     submission_base_mapping = split_record_mapping(submissions_directory, target_directories,
@@ -38,6 +39,7 @@ def split_by_submission():
     # The comment data must be loaded and read so that we have the mapping
     # from comment full-name to base (submission) full-name, which is required for the splitting
     # of the other data sets
+    logger.info("Processing comment tables...")
     comments_directory = os.path.join(input_directory, "stanford_comment_data")
     comment_base_mapping = split_record_mapping(comments_directory, target_directories,
                                                 "comment_fullname", "post_fullname", "post_fullname")
