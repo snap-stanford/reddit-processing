@@ -8,7 +8,6 @@ from enum import Enum
 
 input_directory = ""
 output_directory = ""
-num_splits = 1024
 pool_size = 64
 target_directories = {}
 
@@ -45,6 +44,10 @@ def listdir(directory):
 
 def join():
     split_directories = listdir(input_directory)
+
+    # for dir in split_directories:
+    #     join_dir(dir)
+
     procs = []
     for dir in split_directories:
         procs.append(mp.Process(target=join_dir, args=[dir]))
@@ -58,10 +61,16 @@ def join_dir(dir):
     data_sets = listdir(dir)
     df = pd.DataFrame()
     for data_set in data_sets:
+        logger.debug("Processing: %s" % data_set)
         next = rearrange(aggregate(data_set), get_data_type(data_set))
-        df.append(next)
+        df = df.append(next)
+
+    logger.debug("Sorting: %s" % dir)
     df.sort_values(['user_id', 'endpoint_ts'], inplace=True)
-    df.to_csv(get_aggregate_file(dir), index=False)
+
+    final_output = get_aggregate_file(dir)
+    logger.info("Writing result: %s" % final_output)
+    df.to_csv(final_output, index=False)
 
 
 def aggregate(directory):
@@ -71,7 +80,7 @@ def aggregate(directory):
         next = pd.read_csv(file, compression='gzip')
         if 'bucket' in next.columns:
             next.drop('bucket', axis=1, inplace=True)
-        df.append(next)
+        df = df.append(next)
     return df
 
 
@@ -83,37 +92,40 @@ def rearrange(df, data_type, event_type='event_type'):
     if data_type == DataType.users:
         # registration_dt,user_id,registration_country_code,is_suspended
         df[event_type] = 'create'
-        cols = base_cols + ['registration_country_code', 'is_suspended']
+        df.rename(columns={"registration_dt": "endpoint_ts"}, inplace=True)
+        param_cols = ['registration_country_code', 'is_suspended']
 
     if data_type == DataType.votes:
         # endpoint_ts,user_id,sr_name,target_fullname,target_type,vote_direction
         df[event_type] = 'vote'
-        cols = base_cols + ['sr_name', 'target_fullname', 'target_type', 'vote_direction']
+        param_cols = ['sr_name', 'target_fullname', 'target_type', 'vote_direction']
 
     if data_type == DataType.comments:
         # endpoint_ts,user_id,sr_name,comment_fullname,comment_body,parent_fullname,post_fullname
-        df['event_type'] = 'comment'
-        cols = base_cols + ['sr_name', 'comment_fullname', 'comment_body', 'parent_fullname', 'post_fullname']
+        df[event_type] = 'comment'
+        param_cols = ['sr_name', 'comment_fullname', 'comment_body', 'parent_fullname', 'post_fullname']
 
     if data_type == DataType.submissions:
         # endpoint_ts,user_id,sr_name,post_fullname,post_type,post_title,post_target_url,post_body
         df[event_type] = 'submission'
-        cols = base_cols + ['sr_name', 'post_fullname', 'post_type', 'post_title', 'post_target_url', 'post_body']
+        param_cols = ['sr_name', 'post_fullname', 'post_type', 'post_title', 'post_target_url', 'post_body']
 
     if data_type == DataType.subscriptions:
         # endpoint_ts,user_id,sr_name,event_type
-        cols = base_cols + ['sr_name']
+        param_cols = ['sr_name']
 
     if data_type == DataType.removals:
         # endpoint_ts,user_id,sr_name,event_type,target_fullname,target_type,user_type
-        cols = base_cols + ['sr_name', 'target_fullname', 'target_type', 'user_type']
+        param_cols = ['sr_name', 'target_fullname', 'target_type', 'user_type']
 
     if data_type == DataType.reports:
         # endpoint_ts,user_id,sr_name,target_fullname,target_type,process_notes,details_text
-        cols = base_cols + ['sr_name', 'target_fullname', 'target_type', 'process_notes', 'details_text']
+        df[event_type] = 'report'
+        param_cols = ['sr_name', 'target_fullname', 'target_type', 'process_notes', 'details_text']
 
-    df = df[cols]
-    df.columns = ['user_id', 'endpoint_ts', event_type, 'p0', 'p1', 'p2', 'p3', 'p4'][:len(df.columns)]
+    df = df[base_cols + param_cols]
+    new_columns = base_cols + ['param_%d' % i for i in range(len(param_cols))]
+    df.columns = new_columns
     return df
 
 
@@ -125,8 +137,6 @@ def parse_args():
     io_options_group.add_argument('-o', "--output", help="Output directory")
 
     options_group = parser.add_argument_group("Options")
-    options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split dataset")
-    options_group.add_argument('-on', '--on', type=str, default="user_id", help="Field to split on")
     options_group.add_argument('-p', '--pool-size', type=int, default=64, help="Thread pool size")
 
     console_options_group = parser.add_argument_group("Console Options")
