@@ -60,11 +60,11 @@ def join():
 def join_dir(dir):
     logger.info("Joining directory: %s" % dir)
     data_sets = listdir(dir)
-    df = pd.DataFrame()
+    df = None
     for data_set in data_sets:
         logger.debug("Processing: %s" % data_set)
         next = rearrange(aggregate(data_set), get_data_type(data_set))
-        df = df.append(next)
+        df = next if df is None else df.append(next)
 
     logger.debug("Sorting: %s" % dir)
     df.sort_values(['user_id', 'endpoint_ts'], inplace=True)
