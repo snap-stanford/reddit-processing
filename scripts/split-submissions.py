@@ -20,7 +20,7 @@ def hash(s):
 def get_bucket(s):
     return hash(s) % num_splits
 
-
+=
 def listdir(directory):
     return list(map(lambda d: os.path.join(directory, d), os.listdir(directory)))
 
@@ -30,74 +30,72 @@ def split_by_submission():
     create_target_directories()
     logger.debug("Target directories created.")
 
+    # Must first split up the submission data because
+    submissions_directory = os.path.join(input_directory, "stanford_submission_data")
+    submission_base_mapping = split_record_mapping(submissions_directory, target_directories,
+                                                   "post_fullname", "post_fullname", "post_fullname")
 
-    data_sets = listdir(input_directory)
-    comment_data_set = [dir for dir in data_sets if 'comment' in dir][0]
-    submission_data_set = [dir for dir in data_sets if 'submission' in dir][0]
+    # The comment data must be loaded and read so that we have the mapping
+    # from comment full-name to base (submission) full-name, which is required for the splitting
+    # of the other data sets
+    comments_directory = os.path.join(input_directory, "stanford_comment_data")
+    comment_base_mapping = split_record_mapping(comments_directory, target_directories,
+                                                "comment_fullname", "post_fullname", "post_fullname")
 
-    comment_base_mapping = split_comment_data(comment_data_set, target_directories)
+    final_base_mapping = {**comment_base_mapping, **submission_base_mapping}
+
+    # Now split the rest of the data while adding a column that
+    dirs_to_split = ["stanford_vote_data", "stanford_report_data", "stanford_removal_data"]
+    data_sets = [os.path.join(input_directory, directory) for directory in dirs_to_split]
+
+    for data_set_dir in data_sets:
+        mapped_split(data_set_dir, 'target_fullname', 'post_fullname', final_base_mapping)
 
 
+def mapped_split(data_set_dir, mapped_col, result_column, value_mapping):
 
-    # split_data_set('post_fullname', input_directory, )
+    args_list = [
+        (data_set_dir, table_fname, mapped_col, result_column, value_mapping)
+        for table_fname in os.listdir(data_set_dir)
+    ]
+
+    pool = mp.Pool(pool_size)
+    pool.map(mapped_split_core, args_list)
 
 
-def split_comment_data(comment_data_set_directory, split_target_dir_mapping):
+def unpack_mapped_split_core(args):
+    mapped_split_core(*args)
 
-    comment_base_mapping = {}
-    for table_file_name in os.listdir(comment_data_set_directory):
-        table_file_path = os.path.join(comment_data_set_directory, table_file_name)
+def mapped_split_core(data_set_dir, table_file_name, mapped_col, result_column, value_mapping):
+    table_file_path = os.path.join(data_set_dir, table_file_name)
 
-        logger.debug("Reading comments: %s" % table_file_name)
+    logger.debug("Reading: %s" % table_file_name)
+    df = pd.read_csv(table_file_path, engine='python')
+
+    logger.debug("Mapping column: %s" % table_file_name)
+    df[result_column] = df[mapped_col].map(value_mapping)  # create a new column that is a mapping of the other one
+
+    logger.debug("Splitting: %s" % table_file_name)
+    split_data_frame(df, result_column, get_bucket, target_directories, compress=compress)
+
+
+def split_record_mapping(sub_directory, split_target_dir_mapping, on, col_mapped_from, col_mapped_to):
+
+    mapping = {}
+    for table_file_name in os.listdir(sub_directory):
+        table_file_path = os.path.join(sub_directory, table_file_name)
+
+        logger.debug("Reading: %s" % table_file_name)
         df = pd.read_csv(table_file_path, engine='python')
 
-        logger.debug("Updating target -> submission mapping: %s" % table_file_name)
-        comment_base_mapping.update(dict(zip(df.comment_fullname, df.post_fullname)))
+        logger.debug("Mapping %s -> %s: %s" % (col_mapped_from, col_mapped_to, table_file_name))
+        mapping.update(dict(zip(df[col_mapped_from], df[col_mapped_to])))
 
         logger.debug("Splitting: %s" % table_file_name)
         output_file_map = {i: os.path.join(split_target_dir_mapping[i], table_file_name) for i in range(num_splits)}
-        split_data_frame(df, "post_fullname", get_bucket, output_file_map, compress=compress)
+        split_data_frame(df, on, get_bucket, output_file_map, compress=compress)
 
-    return comment_base_mapping
-
-
-def split_data_frame(df, on, assign_split, output_file_map, temp_col='bkt', compress=False):
-    df[temp_col] = df[on].apply(assign_split)
-    for i in output_file_map:
-        df_out = df[df[temp_col] == i].drop(temp_col, axis=1)  # select rows and drop temporary column
-        df_out.to_csv(output_file_map[i], index=False, compression='gzip' if compress else None)
-
-
-
-def split_all_data_sets(on, include=None, exclude=None):
-    logger.debug("Creating target directories...")
-    create_target_directories()
-    logger.debug("Target directories created.")
-
-    data_sets = os.listdir(input_directory)
-    for data_set in data_sets:
-        if include and data_set not in include: continue
-        if exclude and data_set in exclude: continue
-        data_set_dir = os.path.join(input_directory, data_set)
-        if not os.path.isdir(data_set_dir): continue
-        logger.info("Splitting data-set: %s" % data_set)
-        split_data_set(on, data_set_dir, data_set)
-
-
-def split_data_set(on, data_set_path, sub_dir_name):
-    targets = {}
-    for i in range(num_splits):
-        targets[i] = os.path.join(target_directories[i], sub_dir_name)
-        if not os.path.isdir(targets[i]):
-            os.mkdir(targets[i])
-
-    args_list = [(on, file, targets) for file in listdir(data_set_path)]
-    pool = mp.Pool(pool_size)
-    pool.map(unpack_split_file, args_list)
-
-
-def unpack_split_file(args):
-    split_table_file(*args)
+    return mapping
 
 
 def split_table_file(on, table_file_path, split_target_dir_mapping):
@@ -112,10 +110,14 @@ def split_table_file(on, table_file_path, split_target_dir_mapping):
     logger.debug("Reading: %s" % table_file_name)
     df = pd.read_csv(table_file_path, engine='python')
     logger.debug("Splitting: %s" % table_file_name)
-    df['bucket'] = df[on].apply(get_bucket)
-    for i in range(num_splits):
-        output_file = os.path.join(split_target_dir_mapping[i], table_file_name)
-        df[df['bucket'] == i].drop('bucket', axis=1).to_csv(output_file, index=False, compression='gzip' if compress else None)
+    split_data_frame(df, on, split_target_dir_mapping, compress=compress)
+
+
+def split_data_frame(df, on, assign_split, output_file_map, temp_col='bkt', compress=False):
+    df[temp_col] = df[on].apply(assign_split)
+    for i in output_file_map:
+        df_out = df[df[temp_col] == i].drop(temp_col, axis=1)  # select rows and drop temporary column
+        df_out.to_csv(output_file_map[i], index=False, compression='gzip' if compress else None)
 
 
 def create_target_directories():
@@ -129,6 +131,7 @@ def create_target_directories():
         if not os.path.isdir(target_dir):
             os.mkdir(target_dir)  # create it if it doesn't exist
     return target_directories
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Split the Reddit data-set", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -193,7 +196,7 @@ def main():
     else:
         logger.debug("Output directory: %s" % output_directory)
 
-    split_all_data_sets(args.on, include=args.include, exclude=args.exclude)
+    split_by_submission()
 
 
 if __name__ == "__main__":
