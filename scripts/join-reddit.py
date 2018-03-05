@@ -10,6 +10,7 @@ input_directory = ""
 output_directory = ""
 pool_size = 64
 target_directories = {}
+sequential = False
 
 
 class DataType(Enum):
@@ -45,15 +46,15 @@ def listdir(directory):
 def join():
     split_directories = listdir(input_directory)
 
-    # for dir in split_directories:
-    #     join_dir(dir)
-
-    procs = []
-    for dir in split_directories:
-        procs.append(mp.Process(target=join_dir, args=[dir]))
-
-    for p in procs: p.start()
-    for p in procs: p.join()
+    if sequential:
+        for dir in split_directories:
+            join_dir(dir)
+    else:
+        procs = []
+        for dir in split_directories:
+            procs.append(mp.Process(target=join_dir, args=[dir]))
+        for p in procs: p.start()
+        for p in procs: p.join()
 
 
 def join_dir(dir):
@@ -123,7 +124,7 @@ def rearrange(df, data_type, event_type='event_type'):
         df[event_type] = 'report'
         param_cols = ['sr_name', 'target_fullname', 'target_type', 'process_notes', 'details_text']
 
-    df = df[[base_cols + param_cols]] # reorder columns
+    df = df[base_cols + param_cols]  # reorder columns
     new_columns = base_cols + ['param_%d' % i for i in range(len(param_cols))]
     df.columns = new_columns
     return df
@@ -137,7 +138,7 @@ def parse_args():
     io_options_group.add_argument('-o', "--output", help="Output directory")
 
     options_group = parser.add_argument_group("Options")
-    options_group.add_argument('-p', '--pool-size', type=int, default=64, help="Thread pool size")
+    options_group.add_argument('-s', '--sequential', action='store_true', help="Process sequentially")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
@@ -167,10 +168,10 @@ def parse_args():
 def main():
     args = parse_args()
 
-    global input_directory, output_directory, num_splits, pool_size
+    global input_directory, output_directory, sequential
     input_directory = args.input
     output_directory = args.output
-    pool_size = args.pool_size
+    sequential = args.sequential
 
     logger.debug("Input directory: %s" % input_directory)
     if os.path.isfile(input_directory)or not os.path.isdir(input_directory):
