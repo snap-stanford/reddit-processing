@@ -123,7 +123,7 @@ def rearrange(df, data_type, event_type='event_type'):
         df[event_type] = 'report'
         param_cols = ['sr_name', 'target_fullname', 'target_type', 'process_notes', 'details_text']
 
-    df = df[base_cols + param_cols]
+    df = df[[base_cols + param_cols]] # reorder columns
     new_columns = base_cols + ['param_%d' % i for i in range(len(param_cols))]
     df.columns = new_columns
     return df
