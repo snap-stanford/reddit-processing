@@ -11,7 +11,6 @@ num_splits = 1024
 pool_size = 20
 target_directories = {}
 compress = False
-exclude = None
 
 
 def hash(s):
@@ -21,14 +20,14 @@ def hash(s):
 def get_bucket(s):
     return hash(s) % num_splits
 
-
-def split_all_data_sets(on):
+def split_all_data_sets(on, include=None, exclude=None):
     logger.debug("Creating target directories...")
     create_target_directories()
     logger.debug("Target directories created.")
 
     data_sets = os.listdir(input_directory)
     for data_set in data_sets:
+        if include and data_set not in include: continue
         if exclude and data_set in exclude: continue
         data_set_dir = os.path.join(input_directory, data_set)
         if not os.path.isdir(data_set_dir): continue
@@ -82,16 +81,18 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Split the Reddit data-set", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     io_options_group = parser.add_argument_group("I/O Options")
-    io_options_group.add_argument('-i', "--input", help="Input directory")
-    io_options_group.add_argument('-o', "--output", help="Output directory")
-    io_options_group.add_argument('-sub', "--sub", help="Sub-Directory to process")
+    io_options_group.add_argument('-in', "--input", help="Input directory")
+    io_options_group.add_argument('-out', "--output", help="Output directory")
+    io_options_group.add_argument('-i', "--include", narge='+',help="Sub-Directory to process")
+    io_options_group.add_argument('-x', '--exclude', nargs='+', help="Exclude part of the data set")
+    io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
+
+    io_options_group.add_argument('--submissions', action='store_true', hel='Split by submission')
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")
     options_group.add_argument('-p', '--pool-size', type=int, default=20, help="Thread-pool size")
     options_group.add_argument('-on', '--on', type=str, default="user_id", help="Field to split on")
-    options_group.add_argument('-x', '--exclude', nargs='+', help="Exclude part of the data set")
-    options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
@@ -121,13 +122,12 @@ def parse_args():
 def main():
     args = parse_args()
 
-    global input_directory, output_directory, num_splits, pool_size, compress, exclude
+    global input_directory, output_directory, num_splits, pool_size, compress
     input_directory = args.input
     output_directory = args.output
     num_splits = args.num_splits
     pool_size = args.pool_size
     compress = args.compress
-    exclude = args.exclude
 
     logger.debug("Input directory: %s" % input_directory)
     if os.path.isfile(input_directory)or not os.path.isdir(input_directory):
@@ -140,11 +140,7 @@ def main():
     else:
         logger.debug("Output directory: %s" % output_directory)
 
-    if args.sub:  # split just this sub-directory
-        create_target_directories()
-        split_data_set(args.on, os.path.join(args.input, args.sub), args.sub)
-    else:
-        split_all_data_sets(args.on)
+    split_all_data_sets(args.on, include=args.include, exclude=args.exclude)
 
 
 if __name__ == "__main__":
