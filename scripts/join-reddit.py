@@ -69,7 +69,7 @@ def join_dir(dir):
         df = df.append(next)
 
     logger.debug("Sorting: %s" % dir)
-    df.sort_values(['user_id', 'endpoint_ts'], inplace=True)
+    df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
     df = df[final_columns]  # rearrange columns...
 
     final_output = get_aggregate_file(dir)
