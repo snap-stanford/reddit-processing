@@ -45,8 +45,11 @@ def split_data_set(on, data_set_path, sub_dir_name):
 
     data_files = map(lambda f: os.path.join(data_set_path, f), os.listdir(data_set_path))
     args_list = [(on, file, targets) for file in data_files]
+
+    def unpack(args): split_file(*args)
+
     pool = mp.Pool(pool_size)
-    pool.map(lambda args: split_file(*args), args_list)
+    pool.map(unpack, args_list)
 
 
 def split_file_unpack(args):
