@@ -8,7 +8,11 @@ import pandas as pd
 input_directory = ""
 output_directory = ""
 num_splits = 1024
+pool_size = 20
 target_directories = {}
+compress = False
+exclude = None
+
 
 def hash(s):
     return int(hashlib.md5(s.encode()).hexdigest(), 16)
@@ -25,6 +29,7 @@ def split_all_data_sets(on):
 
     data_sets = os.listdir(input_directory)
     for data_set in data_sets:
+        if exclude and data_set == exclude: continue
         data_set_dir = os.path.join(input_directory, data_set)
         if not os.path.isdir(data_set_dir): continue
         logger.info("Splitting data-set: %s" % data_set)
@@ -39,13 +44,9 @@ def split_data_set(on, data_set_path, sub_dir_name):
             os.mkdir(targets[i])
 
     data_files = map(lambda f: os.path.join(data_set_path, f), os.listdir(data_set_path))
-
-    procs = []
-    for file in data_files:
-        procs.append(mp.Process(target=split_file, args=[on, file, targets]))
-
-    for p in procs: p.start()
-    for p in procs: p.join()
+    args_list = [(on, file, targets) for file in data_files]
+    pool = mp.Pool(pool_size)
+    pool.map(lambda args: split_file(*args), args_list)
 
 
 def split_file_unpack(args):
@@ -84,9 +85,11 @@ def parse_args():
     io_options_group.add_argument('-c', '-compression', help="Output compression")
 
     options_group = parser.add_argument_group("Options")
-    options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split dataset")
+    options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")
+    options_group.add_argument('-p', '--pool-size', type=int, default=20, help="Thread-pool size")
     options_group.add_argument('-on', '--on', type=str, default="user_id", help="Field to split on")
-    options_group.add_argument('-x', '--exclude', type=str, help="Exclude part of the dataset")
+    options_group.add_argument('-x', '--exclude', type=str, help="Exclude part of the data set")
+    options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
@@ -116,10 +119,13 @@ def parse_args():
 def main():
     args = parse_args()
 
-    global input_directory, output_directory, num_splits
+    global input_directory, output_directory, num_splits, pool_size, compress, exclude
     input_directory = args.input
     output_directory = args.output
     num_splits = args.num_splits
+    pool_size = args.pool_size
+    compress = args.compress
+    exclude = args.exclude
 
     logger.debug("Input directory: %s" % input_directory)
     if os.path.isfile(input_directory)or not os.path.isdir(input_directory):

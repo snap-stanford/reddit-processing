@@ -52,11 +52,8 @@ def join():
         for dir in split_directories:
             join_dir(dir)
     else:
-        procs = []
-        for dir in split_directories:
-            procs.append(mp.Process(target=join_dir, args=[dir]))
-        for p in procs: p.start()
-        for p in procs: p.join()
+        pool = mp.Pool(pool_size)
+        pool.map(join_dir, split_directories)
 
 
 def join_dir(dir):
@@ -142,6 +139,7 @@ def parse_args():
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-s', '--sequential', action='store_true', help="Process sequentially")
+    options_group.add_argument('-p', '--pool-size', type=int, default=20, help="Thread-pool size")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
@@ -171,10 +169,11 @@ def parse_args():
 def main():
     args = parse_args()
 
-    global input_directory, output_directory, sequential
+    global input_directory, output_directory, sequential, pool_size
     input_directory = args.input
     output_directory = args.output
     sequential = args.sequential
+    pool_size = args.pool_size
 
     logger.debug("Input directory: %s" % input_directory)
     if os.path.isfile(input_directory)or not os.path.isdir(input_directory):
