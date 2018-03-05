@@ -139,8 +139,6 @@ def parse_args():
     io_options_group = parser.add_argument_group("I/O Options")
     io_options_group.add_argument('-in', "--input", help="Input directory")
     io_options_group.add_argument('-out', "--output", help="Output directory")
-    io_options_group.add_argument('-i', "--include", narge='+',help="Sub-Directory to process")
-    io_options_group.add_argument('-x', '--exclude', nargs='+', help="Exclude part of the data set")
     io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
 
     io_options_group.add_argument('--submissions', action='store_true', hel='Split by submission')
