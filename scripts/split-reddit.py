@@ -29,7 +29,7 @@ def split_all_data_sets(on):
 
     data_sets = os.listdir(input_directory)
     for data_set in data_sets:
-        if exclude and data_set == exclude: continue
+        if exclude and data_set in exclude: continue
         data_set_dir = os.path.join(input_directory, data_set)
         if not os.path.isdir(data_set_dir): continue
         logger.info("Splitting data-set: %s" % data_set)
@@ -90,7 +90,7 @@ def parse_args():
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")
     options_group.add_argument('-p', '--pool-size', type=int, default=20, help="Thread-pool size")
     options_group.add_argument('-on', '--on', type=str, default="user_id", help="Field to split on")
-    options_group.add_argument('-x', '--exclude', type=str, help="Exclude part of the data set")
+    options_group.add_argument('-x', '--exclude', nargs='+', help="Exclude part of the data set")
     options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
 
     console_options_group = parser.add_argument_group("Console Options")
