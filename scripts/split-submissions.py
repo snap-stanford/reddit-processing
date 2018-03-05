@@ -20,7 +20,7 @@ def hash(s):
 def get_bucket(s):
     return hash(s) % num_splits
 
-=
+
 def listdir(directory):
     return list(map(lambda d: os.path.join(directory, d), os.listdir(directory)))
 
