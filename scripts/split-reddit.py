@@ -65,7 +65,7 @@ def split_file(on, file_path, targets):
     df['bucket'] = df[on].apply(get_bucket)
     for i in range(num_splits):
         output_file = os.path.join(targets[i], file_name)
-        df[df['bucket'] == i].to_csv(output_file)
+        df[df['bucket'] == i].drop('bucket', axis=1).to_csv(output_file)
 
 
 def create_target_directories():
