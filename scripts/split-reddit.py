@@ -19,7 +19,7 @@ def get_bucket(s):
     return hash(s) % num_splits
 
 
-def split(on):
+def split_all_data_sets(on):
     logger.debug("Creating target directories...")
     create_target_directories()
     logger.debug("Target directories created.")
@@ -86,6 +86,7 @@ def parse_args():
     io_options_group = parser.add_argument_group("I/O Options")
     io_options_group.add_argument('-i', "--input", help="Input directory")
     io_options_group.add_argument('-o', "--output", help="Output directory")
+    io_options_group.add_argument('-sub', "--sub", help="Sub-Directory to process")
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split dataset")
@@ -137,7 +138,10 @@ def main():
     else:
         logger.debug("Output directory: %s" % output_directory)
 
-    split(args.on)
+    if args.sub:  # split just this sub-directory
+        split_data_set(args.on, os.path.join(args.input, args.sub), args.sub)
+    else:
+        split_all_data_sets(args.on)
 
 
 if __name__ == "__main__":

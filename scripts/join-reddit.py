@@ -24,6 +24,9 @@ class DataType(Enum):
     unknown = 8
 
 
+def get_aggregate_file(split_directory):
+    return os.path.join(output_directory, os.path.split(split_directory)[1] + ".csv")
+
 def get_data_type(directory):
     if "user" in directory: return DataType.users
     if "vote" in directory: return DataType.votes
@@ -35,22 +38,35 @@ def get_data_type(directory):
     return DataType.unknown
 
 
-def listdir(dir):
-    return list(map(lambda d: os.path.join(dir, d), os.listdir(dir)))
+def listdir(directory):
+    return list(map(lambda d: os.path.join(directory, d), os.listdir(directory)))
 
 
 def join():
     split_directories = listdir(input_directory)
-    # todo: spawn one process per split -> call join_dir
+    procs = []
+    for dir in split_directories:
+        procs.append(mp.Process(target=join_dir, args=[dir]))
 
+    for p in procs: p.start()
+    for p in procs: p.join()
+
+def combine_and_group(joined_files):
+    df = pd.DataFrame()
+    for file in joined_files:
+        df.append(pd.read_csv(file))
+    df.sort_values(['user_id', 'endpoint_ts'], inplace=True)
+    df.to_csv()
 
 def join_dir(dir):
+    logger.info("Joining directory: %s" % dir)
     data_sets = listdir(dir)
     df = pd.DataFrame()
     for data_set in data_sets:
         next = rearrange(aggregate(data_set), get_data_type(data_set))
         df.append(next)
-    
+    df.sort_values(['user_id', 'endpoint_ts'], inplace=True)
+    df.to_csv(get_aggregate_file(dir), index=False, compression='gzip')
 
 def aggregate(directory):
     files = listdir(directory)
