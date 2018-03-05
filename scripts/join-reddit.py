@@ -27,6 +27,7 @@ class DataType(Enum):
 def get_aggregate_file(split_directory):
     return os.path.join(output_directory, os.path.split(split_directory)[1] + ".csv")
 
+
 def get_data_type(directory):
     if "user" in directory: return DataType.users
     if "vote" in directory: return DataType.votes
@@ -72,7 +73,10 @@ def aggregate(directory):
     files = listdir(directory)
     df = pd.DataFrame()
     for file in files:
-        df.append(pd.read_csv(file).drop('bucket'))
+        next = pd.read_csv(file)
+        if 'bucket' in next.columns:
+            next.drop('bucket', axis=1, inplace=True)
+        df.append(next)
     return df
 
 
