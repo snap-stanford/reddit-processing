@@ -82,7 +82,6 @@ def parse_args():
     io_options_group.add_argument('-i', "--input", help="Input directory")
     io_options_group.add_argument('-o', "--output", help="Output directory")
     io_options_group.add_argument('-sub', "--sub", help="Sub-Directory to process")
-    io_options_group.add_argument('-c', '-compression', help="Output compression")
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")
