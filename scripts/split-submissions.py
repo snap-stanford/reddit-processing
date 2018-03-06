@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os, sys, csv
 import logging, argparse
-import hashlib, json
+import hashlib, pickle
 import multiprocessing as mp
 import pandas as pd
 import numpy as np
@@ -27,8 +27,8 @@ def listdir(directory):
 
 
 def save_dict(d, fname):
-    with open(fname, 'w') as f:
-        f.write(json.dumps(d))
+    with open(fname, 'wb') as f:
+        f.write(pickle.dumps(d))
 
 def split_by_submission(cache_fname = "final_base_mapping.txt"):
     logger.debug("Creating target directories...")
@@ -37,7 +37,7 @@ def split_by_submission(cache_fname = "final_base_mapping.txt"):
 
     if os.path.isfile(cache_fname):
         logger.debug("Loading cache file: %s" % cache_fname)
-        final_base_mapping = json.loads(cache_fname)
+        final_base_mapping = pickle.loads(cache_fname)
         p = None
     else:
         logger.info("Processing submission tables...")
