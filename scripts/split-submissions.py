@@ -5,6 +5,7 @@ import hashlib
 import multiprocessing as mp
 import pandas as pd
 import pickle
+import json
 
 input_directory = ""
 output_directory = ""
@@ -26,6 +27,10 @@ def listdir(directory):
     return list(map(lambda d: os.path.join(directory, d), os.listdir(directory)))
 
 
+def save_dict(d, fname):
+    with open(fname, 'w') as f:
+        f.write(json.dumps(d))
+
 def split_by_submission():
     logger.debug("Creating target directories...")
     create_target_directories()
@@ -46,8 +51,9 @@ def split_by_submission():
                                                 "post_fullname", "comment_fullname", "post_fullname")
 
     final_base_mapping = {**comment_base_mapping, **submission_base_mapping}
-    with open("final_base_mapping.txt", 'w') as f:
-        f.write(pickle.dumps(final_base_mapping))
+    cache_fname = "final_base_mapping.txt"
+    logger.info("Saving submission map to: %s" % cache_fname)
+    save_dict(final_base_mapping, cache_fname)
 
     # Now split the rest of the data while adding a column that
     dirs_to_split = ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]
