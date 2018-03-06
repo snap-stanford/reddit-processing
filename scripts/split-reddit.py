@@ -20,6 +20,7 @@ def hash(s):
 def get_bucket(s):
     return hash(s) % num_splits
 
+
 def split_all_data_sets(on, include=None, exclude=None):
     logger.debug("Creating target directories...")
     create_target_directories()

@@ -4,6 +4,7 @@ import logging, argparse
 import hashlib
 import multiprocessing as mp
 import pandas as pd
+import pickle
 
 input_directory = ""
 output_directory = ""
@@ -45,6 +46,8 @@ def split_by_submission():
                                                 "comment_fullname", "post_fullname", "post_fullname")
 
     final_base_mapping = {**comment_base_mapping, **submission_base_mapping}
+    with open("final_base_mapping.txt", 'w') as f:
+        f.write(pickle.dumps(final_base_mapping))
 
     # Now split the rest of the data while adding a column that
     dirs_to_split = ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]
