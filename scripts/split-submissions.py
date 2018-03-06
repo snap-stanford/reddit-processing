@@ -95,7 +95,8 @@ def mapped_split_core(data_set_dir, table_file_name, mapped_col, result_column, 
     df[result_column].fillna("missing", inplace=True)
 
     logger.debug("Splitting: %s" % table_file_name)
-    split_data_frame(df, result_column, get_bucket, target_directories, compress=compress)
+    output_file_map = {i: os.path.join(target_directories[i], table_file_name) for i in target_directories}
+    split_data_frame(df, result_column, get_bucket, output_file_map, compress=compress)
 
 
 def split_record_mapping(sub_directory, split_target_dir_mapping, on, col_mapped_from, col_mapped_to):
