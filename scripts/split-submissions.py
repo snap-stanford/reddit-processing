@@ -161,8 +161,8 @@ def parse_args():
     io_options_group.add_argument('-in', "--input", help="Input directory")
     io_options_group.add_argument('-out', "--output", help="Output directory")
     io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
-    io_options_group.add_argument_group('--cache', type=str,
-                                        default="submission_map_cache.txt", help="Submission mapping file cache")
+    io_options_group.add_argument('--cache', type=str, default="submission_map_cache.txt",
+                                  help="Submission mapping file cache")
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")
