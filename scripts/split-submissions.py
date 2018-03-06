@@ -43,7 +43,7 @@ def split_by_submission():
     logger.info("Processing comment tables...")
     comments_directory = os.path.join(input_directory, "stanford_comment_data")
     comment_base_mapping = split_record_mapping(comments_directory, target_directories,
-                                                "comment_fullname", "post_fullname", "post_fullname")
+                                                "post_fullname", "comment_fullname", "post_fullname")
 
     final_base_mapping = {**comment_base_mapping, **submission_base_mapping}
     with open("final_base_mapping.txt", 'w') as f:
