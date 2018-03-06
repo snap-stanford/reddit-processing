@@ -78,7 +78,8 @@ def aggregate(directory):
     files = listdir(directory)
     df = pd.DataFrame()
     for file in files:
-        next = pd.read_csv(file, compression='gzip')
+        try: next = pd.read_csv(file, compression='infer')
+        except: next = pd.read_csv(file, compression='gzip')
         if 'bucket' in next.columns:
             next.drop('bucket', axis=1, inplace=True)
         df = df.append(next)
