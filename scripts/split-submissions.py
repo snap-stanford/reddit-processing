@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 import os, sys, csv
 import logging, argparse
-import hashlib
+import hashlib, json
 import multiprocessing as mp
 import pandas as pd
-import pickle
-import json
+import numpy as np
 
 input_directory = ""
 output_directory = ""
@@ -31,36 +30,44 @@ def save_dict(d, fname):
     with open(fname, 'w') as f:
         f.write(json.dumps(d))
 
-def split_by_submission():
+def split_by_submission(cache_fname = "final_base_mapping.txt"):
     logger.debug("Creating target directories...")
     create_target_directories()
     logger.debug("Target directories created.")
 
-    logger.info("Processing submission tables...")
-    # Must first split up the submission data because
-    submissions_directory = os.path.join(input_directory, "stanford_submission_data")
-    submission_base_mapping = split_record_mapping(submissions_directory, target_directories,
-                                                   "post_fullname", "post_fullname", "post_fullname")
+    if os.path.isfile(cache_fname):
+        logger.debug("Loading cache file: %s" % cache_fname)
+        final_base_mapping = json.loads(cache_fname)
+        p = None
+    else:
+        logger.info("Processing submission tables...")
+        # Must first split up the submission data because
+        submissions_directory = os.path.join(input_directory, "stanford_submission_data")
+        submission_base_mapping = split_record_mapping(submissions_directory, target_directories,
+                                                       "post_fullname", "post_fullname", "post_fullname")
 
-    # The comment data must be loaded and read so that we have the mapping
-    # from comment full-name to base (submission) full-name, which is required for the splitting
-    # of the other data sets
-    logger.info("Processing comment tables...")
-    comments_directory = os.path.join(input_directory, "stanford_comment_data")
-    comment_base_mapping = split_record_mapping(comments_directory, target_directories,
-                                                "post_fullname", "comment_fullname", "post_fullname")
+        # The comment data must be loaded and read so that we have the mapping
+        # from comment full-name to base (submission) full-name, which is required for the splitting
+        # of the other data sets
+        logger.info("Processing comment tables...")
+        comments_directory = os.path.join(input_directory, "stanford_comment_data")
+        comment_base_mapping = split_record_mapping(comments_directory, target_directories,
+                                                    "post_fullname", "comment_fullname", "post_fullname")
 
-    final_base_mapping = {**comment_base_mapping, **submission_base_mapping}
-    cache_fname = "final_base_mapping.txt"
-    logger.info("Saving submission map to: %s" % cache_fname)
-    save_dict(final_base_mapping, cache_fname)
+        final_base_mapping = {**submission_base_mapping, **comment_base_mapping}
 
-    # Now split the rest of the data while adding a column that
+        logger.info("Saving submission map to: %s" % cache_fname)
+        p = mp.Process(target=save_dict, args=[final_base_mapping, cache_fname])
+        p.start()  # start process for saving the file...
+
+    # Now split the rest of the data while adding a column using the mapping that we have
     dirs_to_split = ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]
     data_sets = [os.path.join(input_directory, directory) for directory in dirs_to_split]
 
     for data_set_dir in data_sets:
         mapped_split(data_set_dir, 'target_fullname', 'post_fullname', final_base_mapping)
+
+    if p: p.join()  # Join up with the process that saved the cache file
 
 
 def mapped_split(data_set_dir, mapped_col, result_column, value_mapping):
@@ -85,6 +92,7 @@ def mapped_split_core(data_set_dir, table_file_name, mapped_col, result_column, 
 
     logger.debug("Mapping column: %s" % table_file_name)
     df[result_column] = df[mapped_col].map(value_mapping)  # create a new column that is a mapping of the other one
+    df[result_column].fillna("missing", inplace=True)
 
     logger.debug("Splitting: %s" % table_file_name)
     split_data_frame(df, result_column, get_bucket, target_directories, compress=compress)
@@ -105,7 +113,6 @@ def split_record_mapping(sub_directory, split_target_dir_mapping, on, col_mapped
         mapping.update(d)
     return mapping
 
-
 def unkack_core(args):
     return core(*args)
 
@@ -124,21 +131,6 @@ def core(sub_directory, table_file_name, split_target_dir_mapping, on, col_mappe
     split_data_frame(df, on, get_bucket, output_file_map, compress=compress)
 
     return mapping
-
-
-def split_table_file(on, table_file_path, split_target_dir_mapping):
-    """
-    Splits a table stored in a file on a specified column, writing it to the
-    :param on: The column of the table to split on
-    :param table_file_path: Full path to the file containing the table to split
-    :param split_target_dir_mapping: A mapping from bucket/split number to output directory to write results
-    :return: None
-    """
-    table_file_name = os.path.split(table_file_path)[1]
-    logger.debug("Reading: %s" % table_file_name)
-    df = pd.read_csv(table_file_path, engine='python')
-    logger.debug("Splitting: %s" % table_file_name)
-    split_data_frame(df, on, split_target_dir_mapping, compress=compress)
 
 
 def split_data_frame(df, on, assign_split, output_file_map, temp_col='bkt', compress=False):
