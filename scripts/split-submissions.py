@@ -27,12 +27,10 @@ def listdir(directory):
 
 
 def save_dict(d, fname):
-    with open(fname, 'wb') as f:
-        f.write(pickle.dumps(d))
+    pickle.dump(d, open(fname, 'wb'))
 
 def load_dict(fname):
-    with open(fname, 'rb') as f:
-        return pickle.loads(f)
+    return pickle.load(open(fname, 'rb'))
 
 def split_by_submission(cache_fname="final_base_mapping.txt"):
     logger.debug("Creating target directories...")
