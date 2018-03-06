@@ -217,7 +217,7 @@ def main():
     else:
         logger.debug("Output directory: %s" % output_directory)
 
-    split_by_submission()
+    split_by_submission(cache_fname=args.cache)
 
 
 if __name__ == "__main__":
