@@ -30,6 +30,10 @@ def save_dict(d, fname):
     with open(fname, 'wb') as f:
         f.write(pickle.dumps(d))
 
+def load_dict(fname):
+    with open(fname, 'rb') as f:
+        return pickle.loads(f)
+
 def split_by_submission(cache_fname="final_base_mapping.txt"):
     logger.debug("Creating target directories...")
     create_target_directories()
@@ -37,7 +41,7 @@ def split_by_submission(cache_fname="final_base_mapping.txt"):
 
     if os.path.isfile(cache_fname):
         logger.debug("Loading cache file: %s" % cache_fname)
-        final_base_mapping = pickle.loads(cache_fname)
+        final_base_mapping = load_dict(cache_fname)
         p = None
     else:
         logger.info("Processing submission tables...")
