@@ -30,7 +30,7 @@ def save_dict(d, fname):
     with open(fname, 'wb') as f:
         f.write(pickle.dumps(d))
 
-def split_by_submission(cache_fname = "final_base_mapping.txt"):
+def split_by_submission(cache_fname="final_base_mapping.txt"):
     logger.debug("Creating target directories...")
     create_target_directories()
     logger.debug("Target directories created.")
@@ -160,6 +160,8 @@ def parse_args():
     io_options_group.add_argument('-in', "--input", help="Input directory")
     io_options_group.add_argument('-out', "--output", help="Output directory")
     io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
+    io_options_group.add_argument_group('--cache', type=str,
+                                        default="submission_map_cache.txt", help="Submission mapping file cache")
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")
