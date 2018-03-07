@@ -144,30 +144,44 @@ def parse_args():
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
     console_options_group.add_argument('--debug', action='store_true', help='Debug Console')
-    console_options_group.add_argument('-log', '--log', type=str, default=None, help="Logging file")
+    console_options_group.add_argument('-log', '--log', nargs='?', type=str, help="Logging file",
+                                       default=os.path.join("log", os.path.splitext(os.path.basename(__file__))[
+                                           0] + '_log.txt'))
+    return parser.parse_args()
 
-    args = parser.parse_args()
 
+def init_logger(args):
     global logger
     if args.debug:
-        logging.basicConfig(filename=args.log, format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+        logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
 
     elif args.verbose:
-        logging.basicConfig(filename=args.log, format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+        logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.INFO)
     else:
-        logging.basicConfig(filename=args.log, format='[log][%(levelname)s] - %(message)s')
+        logging.basicConfig(format='[log][%(levelname)s] - %(message)s')
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.WARNING)
 
-    return args
+    if args.log:  # Logging file was specified
+        log_file = os.path.expanduser(args.log)
+
+        log_file_dir = os.path.split(log_file)[0]
+        if not os.path.exists(log_file_dir): os.mkdir(log_file_dir)
+
+        if os.path.isfile(log_file):
+            open(args.log, 'w').close()
+
+        log_file_handler = logging.FileHandler(log_file)
+        logger.addHandler(log_file_handler)
 
 
 def main():
     args = parse_args()
+    init_logger(args)
 
     global input_directory, output_directory, sequential, pool_size
     input_directory = args.input
