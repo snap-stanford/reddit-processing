@@ -61,8 +61,10 @@ def join_dir(dir):
     data_sets = listdir(dir)
     df = pd.DataFrame()
     for data_set in data_sets:
-        logger.debug("Processing: %s" % data_set)
-        next = rearrange(aggregate(data_set), get_data_type(data_set))
+        logger.debug("Concatenating: %s" % data_set)
+        df = aggregate(data_set)
+        logger.debug("Modifying columns: %s" % data_set)
+        next = rearrange(df, get_data_type(data_set))
         df = df.append(next)
 
     logger.debug("Sorting: %s" % dir)
@@ -78,11 +80,13 @@ def aggregate(directory):
     files = listdir(directory)
     df = pd.DataFrame()
     for file in files:
-        try: next = pd.read_csv(file, compression='infer')
-        except UnicodeDecodeError: next = pd.read_csv(file, compression='gzip')
+        try:
+            next = pd.read_csv(file, compression='infer')
+        except UnicodeDecodeError:
+            next = pd.read_csv(file, compression='gzip')
         if 'bucket' in next.columns:
             next.drop('bucket', axis=1, inplace=True)
-        df = df.append(next)
+        df = pd.concat([df, next])
     return df
 
 
