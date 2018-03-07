@@ -77,16 +77,17 @@ def join_dir(dir):
 
 
 def aggregate(directory):
-    files = listdir(directory)
-    df = pd.DataFrame()
-    for file in files:
+    def read(file):
         try:
-            next = pd.read_csv(file, compression='infer')
+            return pd.read_csv(file, compression='infer')
         except UnicodeDecodeError:
-            next = pd.read_csv(file, compression='gzip')
-        if 'bucket' in next.columns:
-            next.drop('bucket', axis=1, inplace=True)
-        df = pd.concat([df, next])
+            return pd.read_csv(file, compression='gzip')
+
+    df = pd.concat((read(file) for file in listdir(directory)))
+
+    if 'bucket' in df.columns:
+        df.drop('bucket', axis=1, inplace=True)
+
     return df
 
 
