@@ -97,9 +97,6 @@ def mapped_split_core(data_set_dir, table_file_name, mapped_col, result_column):
     split_data_frame(df, result_column, get_bucket, output_file_map, compress=compress)
 
 
-
-
-
 # For splitting comments while recodging mapping
 def split_record_mapping(sub_directory, split_target_dir_mapping, on, col_mapped_from, col_mapped_to):
 
@@ -183,43 +180,58 @@ def parse_args():
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
     console_options_group.add_argument('--debug', action='store_true', help='Debug Console')
-    console_options_group.add_argument('-log', '--log', nargs='?', type=str, help="Logging file",
-                                       default=os.path.join("log", os.path.splitext(os.path.basename(__file__))[0] + '_log.txt'))
+    console_options_group.add_argument('-log', '--log', nargs='?',  default='None', help="Logging file")
+
     return parser.parse_args()
 
 
 def init_logger(args):
-    global logger
-    if args.debug:
-        logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
 
-    elif args.verbose:
-        logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.INFO)
-    else:
-        logging.basicConfig(format='[log][%(levelname)s] - %(message)s')
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.WARNING)
+    if args.log == 'None':  # No --log flag
+        log_file = None
+    elif not args.log:  # Flag but no argument
+        log_file = os.path.join("log", os.path.splitext(os.path.basename(__file__))[0] + '_log.txt')
+    else:  # flag with argument
+        log_file = args.log
 
-    if args.log:  # Logging file was specified
-        log_file = os.path.expanduser(args.log)
-
+    if log_file:  # Logging file was specified
         log_file_dir = os.path.split(log_file)[0]
-        if not os.path.exists(log_file_dir): os.mkdir(log_file_dir)
+        if log_file_dir and not os.path.exists(log_file_dir):
+            os.mkdir(log_file_dir)
 
         if os.path.isfile(log_file):
-            open(args.log, 'w').close()
+            open(log_file, 'w').close()
 
-        log_file_handler = logging.FileHandler(log_file)
-        logger.addHandler(log_file_handler)
+    global logger
+    if args.debug: log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+    elif args.verbose: log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+    else: log_formatter = logging.Formatter('[log][%(levelname)s] - %(message)s')
+
+    logger = logging.getLogger(__name__)
+    if log_file:
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(log_formatter)
+        logger.addHandler(file_handler)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(log_formatter)
+    logger.addHandler(console_handler)
+
+    if args.debug: level = logging.DEBUG
+    elif args.verbose: level = logging.INFO
+    else: level = logging.WARNING
+
+    logger.setLevel(level)
+
 
 
 def main():
     args = parse_args()
     init_logger(args)
+
+    logger.debug("work damnit")
+    logger.info("okayu")
+    logger.error("exiting bitch")
+    exit()
 
     global input_directory, output_directory, num_splits, pool_size, compress
     input_directory = os.path.expanduser(args.input)

@@ -33,23 +33,57 @@ def parse_args():
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
     console_options_group.add_argument('--debug', action='store_true', help='Debug Console')
+    console_options_group.add_argument('-log', '--log', nargs='?', default='None', help="Logging file")
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def init_logger(args):
+    if args.log == 'None':  # No --log flag
+        log_file = None
+    elif not args.log:  # Flag but no argument
+        log_file = os.path.join("log", os.path.splitext(os.path.basename(__file__))[0] + '_log.txt')
+    else:  # flag with argument
+        log_file = args.log
+
+    if log_file:  # Logging file was specified
+        log_file_dir = os.path.split(log_file)[0]
+        if log_file_dir and not os.path.exists(log_file_dir):
+            os.mkdir(log_file_dir)
+
+        if os.path.isfile(log_file):
+            open(log_file, 'w').close()
+
+    global logger
+    if args.debug:
+        log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+    elif args.verbose:
+        log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+    else:
+        log_formatter = logging.Formatter('[log][%(levelname)s] - %(message)s')
+
+    logger = logging.getLogger(__name__)
+    if log_file:
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(log_formatter)
+        logger.addHandler(file_handler)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(log_formatter)
+    logger.addHandler(console_handler)
 
     if args.debug:
-        logger.setLevel(logging.DEBUG)
-        logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+        level = logging.DEBUG
     elif args.verbose:
-        logger.setLevel(logging.INFO)
-        logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
+        level = logging.INFO
     else:
-        logger.setLevel(logging.WARNING)
-        logging.basicConfig(format='[log][%(levelname)s] - %(message)s')
-    return args
+        level = logging.WARNING
+
+    logger.setLevel(level)
 
 
 def main():
     args = parse_args()
+    init_logger(args)
 
     logger.debug("Input directory: %s" % args.input)
     if not os.path.exists(args.input):
