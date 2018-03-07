@@ -178,14 +178,13 @@ def parse_args():
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")
-    options_group.add_argument('-p', '--pool-size', type=int, default=20, help="Thread-pool size")
-    options_group.add_argument('-on', '--on', type=str, default="user_id", help="Field to split on")
+    options_group.add_argument('-p', '--pool-size', type=int, default=20,    help="Thread-pool size")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
     console_options_group.add_argument('--debug', action='store_true', help='Debug Console')
-    console_options_group.add_argument('-log', '--log', type=str, default=None, help="Logging file")
-
+    console_options_group.add_argument('-log', '--log', nargs='?', type=str, help="Logging file",
+                                       default=os.path.join("log", os.path.splitext(__file__)[0]+'_log.txt'))
     args = parser.parse_args()
 
     global logger
@@ -202,6 +201,11 @@ def parse_args():
         logging.basicConfig(filename=args.log, format='[log][%(levelname)s] - %(message)s')
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.WARNING)
+
+    log_file_handler = logging.FileHandler(args.log)
+    log_console_handler = logging.StreamHandler()
+    logger.addHandler(log_file_handler)
+    logger.addHandler(log_console_handler)
 
     return args
 
