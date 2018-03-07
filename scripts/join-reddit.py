@@ -125,10 +125,12 @@ def rearrange(df, data_type, event_type='event_type'):
 
     if data_type == DataType.subscriptions:
         # endpoint_ts,user_id,sr_name,event_type
+        # event_type is already present here
         param_cols = ['sr_name']
 
     if data_type == DataType.removals:
         # endpoint_ts,user_id,sr_name,event_type,target_fullname,target_type,user_type
+        # event_type is already present here
         param_cols = ['sr_name', 'target_fullname', 'target_type', 'user_type']
 
     if data_type == DataType.reports:

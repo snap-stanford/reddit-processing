@@ -86,15 +86,11 @@ def aggregate(directory):
 
 
 def rearrange(df, data_type, event_type='event_type'):
-    if data_type == DataType.unknown: return
+    if data_type in [DataType.unknown, DataType.subscriptions, DataType.users]:
+        logger.error("Invalid data type")
+        return
 
-    base_cols = ['user_id', 'endpoint_ts', event_type]
-
-    if data_type == DataType.users:
-        # registration_dt,user_id,registration_country_code,is_suspended
-        df[event_type] = 'create'
-        df.rename(columns={"registration_dt": "endpoint_ts"}, inplace=True)
-        param_cols = ['registration_country_code', 'is_suspended']
+    base_cols = ['post_fullname', 'endpoint_ts', event_type]
 
     if data_type == DataType.votes:
         # endpoint_ts,user_id,sr_name,target_fullname,target_type,vote_direction
@@ -111,12 +107,10 @@ def rearrange(df, data_type, event_type='event_type'):
         df[event_type] = 'submission'
         param_cols = ['sr_name', 'post_fullname', 'post_type', 'post_title', 'post_target_url', 'post_body']
 
-    if data_type == DataType.subscriptions:
-        # endpoint_ts,user_id,sr_name,event_type
-        param_cols = ['sr_name']
 
     if data_type == DataType.removals:
         # endpoint_ts,user_id,sr_name,event_type,target_fullname,target_type,user_type
+        # event_type is already present here
         param_cols = ['sr_name', 'target_fullname', 'target_type', 'user_type']
 
     if data_type == DataType.reports:

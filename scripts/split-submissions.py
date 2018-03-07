@@ -101,6 +101,7 @@ def mapped_split_core(data_set_dir, table_file_name, mapped_col, result_column):
 def split_record_mapping(sub_directory, split_target_dir_mapping, on, col_mapped_from, col_mapped_to):
 
     def read_table(fname):
+        logger.debug("Loading: %s" % fname)
         return pd.read_csv(fname, engine="python")
 
     logger.debug("Reading all tables from: %s" % sub_directory)
@@ -221,7 +222,6 @@ def init_logger(args):
     else: level = logging.WARNING
 
     logger.setLevel(level)
-
 
 
 def main():
