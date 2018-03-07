@@ -65,7 +65,7 @@ def join_dir(dir):
         df = aggregate(data_set)
         logger.debug("Modifying columns: %s" % data_set)
         next = rearrange(df, get_data_type(data_set))
-        df = df.append(next)
+        df = pd.concat([df, next])
 
     logger.debug("Sorting: %s" % dir)
     df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
