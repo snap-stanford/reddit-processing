@@ -228,11 +228,6 @@ def main():
     args = parse_args()
     init_logger(args)
 
-    logger.debug("work damnit")
-    logger.info("okayu")
-    logger.error("exiting bitch")
-    exit()
-
     global input_directory, output_directory, num_splits, pool_size, compress
     input_directory = os.path.expanduser(args.input)
     output_directory = os.path.expanduser(args.output)
