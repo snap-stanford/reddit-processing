@@ -70,7 +70,7 @@ def join_dir(dir):
         return df
 
     logger.debug("Concatenating aggregated directory: %s" % dir)
-    df = pd.concat((get_data_set_df(data_set) for data_set in listdir(dir)))
+    df = pd.concat(map(get_data_set_df, listdir(dir)))
     logger.debug("Finished concatenating: %s" % dir)
 
     logger.debug("Sorting: %s" % dir)
@@ -89,7 +89,7 @@ def aggregate(directory):
         except UnicodeDecodeError:
             return pd.read_csv(file, compression='gzip')
 
-    df = pd.concat((read(file) for file in listdir(directory)))
+    df = pd.concat(map(read, listdir(directory)))
 
     if 'bucket' in df.columns:
         df.drop('bucket', axis=1, inplace=True)
