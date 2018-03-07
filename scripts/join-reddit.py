@@ -60,12 +60,14 @@ def join_dir(dir):
     logger.info("Joining directory: %s" % dir)
     data_sets = listdir(dir)
     df = pd.DataFrame()
-    for data_set in data_sets:
+
+    def get_data_set_df(data_set):
         logger.debug("Concatenating: %s" % data_set)
         df = aggregate(data_set)
         logger.debug("Modifying columns: %s" % data_set)
-        next = rearrange(df, get_data_type(data_set))
-        df = pd.concat([df, next])
+        return rearrange(df, get_data_type(data_set))
+
+    df = pd.concat((get_data_set_df(data_set) for data_set in data_sets))
 
     logger.debug("Sorting: %s" % dir)
     df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
