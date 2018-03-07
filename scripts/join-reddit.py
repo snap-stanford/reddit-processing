@@ -58,16 +58,20 @@ def join():
 
 def join_dir(dir):
     logger.info("Joining directory: %s" % dir)
-    data_sets = listdir(dir)
-    df = pd.DataFrame()
 
     def get_data_set_df(data_set):
         logger.debug("Concatenating: %s" % data_set)
         df = aggregate(data_set)
-        logger.debug("Modifying columns: %s" % data_set)
-        return rearrange(df, get_data_type(data_set))
+        logger.debug("Finished concatenating: %s" % data_set)
 
-    df = pd.concat((get_data_set_df(data_set) for data_set in data_sets))
+        logger.debug("Modifying columns: %s" % data_set)
+        df = rearrange(df, get_data_type(data_set))
+        logger.debug("Finished modifying: %s" % data_set)
+        return df
+
+    logger.debug("Concatenating aggregated directory: %s" % dir)
+    df = pd.concat((get_data_set_df(data_set) for data_set in listdir(dir)))
+    logger.debug("Finished concatenating: %s" % dir)
 
     logger.debug("Sorting: %s" % dir)
     df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
