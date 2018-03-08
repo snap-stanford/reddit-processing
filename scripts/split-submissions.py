@@ -128,7 +128,7 @@ def split_file(on, file_path, targets, map_columns=None, maps_dir=None):
     split_data_frame(df, on, get_bucket, file_targets)
     if map_columns:
         logger.debug("Mapping column %s of %s" % (map_columns[0], file_name))
-        output_file = os.path.join(maps_dir, os.path.split(file_name) + "_map")
+        output_file = os.path.join(maps_dir, os.path.split(file_name)[0] + "_map")
         col_map = dict(zip(df[map_columns[0]], df[map_columns[1]]))
         logger.debug("Saving map: %s" % output_file)
         save_dict(col_map, output_file)
