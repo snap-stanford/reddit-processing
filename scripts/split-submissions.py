@@ -101,7 +101,10 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     for i in target_directories:
         target_sub_dir = os.path.join(target_directories[i], data_set_name)
         if not os.path.exists(target_sub_dir):
-            os.mkdir(target_sub_dir)
+            try:
+                os.mkdir(target_sub_dir)
+            except FileExistsError:
+                pass
         output_file_map[i] = os.path.join(target_sub_dir, table_file_name)
 
     logger.debug("Splitting: %s" % table_file_name)
@@ -113,7 +116,11 @@ def split_data_set(on, reddit_path, data_set_name, map_columns=None, maps_dir=No
     for i in range(num_splits):
         targets[i] = os.path.join(target_directories[i], data_set_name)
         if not os.path.isdir(targets[i]):
-            os.mkdir(targets[i])
+            try:
+                os.mkdir(targets[i])
+            except FileExistsError:
+                pass
+
 
     full_sub_data_path = os.path.join(reddit_path, data_set_name)
     data_files = map(lambda f: os.path.join(full_sub_data_path, f), os.listdir(full_sub_data_path))
@@ -158,7 +165,10 @@ def create_target_directories():
             logger.error("File exists: %s" % target_dir)
             exit(1)
         if not os.path.isdir(target_dir):
-            os.mkdir(target_dir)  # create it if it doesn't exist
+            try:
+                os.mkdir(target_dir)  # create it if it doesn't exist
+            except FileExistsError:
+                pass
     return target_directories
 
 
