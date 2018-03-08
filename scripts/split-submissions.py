@@ -161,7 +161,7 @@ def parse_args():
     io_options_group.add_argument('-in', "--input", help="Input directory")
     io_options_group.add_argument('-out', "--output", help="Output directory")
     io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
-    io_options_group.add_argument('--cache', type=str, default="submission_map_cache.txt",
+    io_options_group.add_argument('--cache', type=str, default="comment_map_cache",
                                   help="Submission mapping file cache")
 
     options_group = parser.add_argument_group("Options")
