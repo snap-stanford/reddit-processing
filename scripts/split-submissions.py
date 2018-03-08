@@ -109,7 +109,7 @@ def split_data_set(on, data_set_path, sub_dir_name, map_columns=None, maps_dir=N
             os.mkdir(targets[i])
 
     full_sub_data_path = os.path.join(data_set_path, sub_dir_name)
-    data_files = map(lambda f: os.path.join(data_set_path, f), os.listdir(full_sub_data_path))
+    data_files = map(lambda f: os.path.join(full_sub_data_path, f), os.listdir(full_sub_data_path))
     args_list = [(on, table_file, targets, map_columns, maps_dir) for table_file in data_files]
     pool = mp.Pool(pool_size)
     pool.map(unpack_split_file, args_list)
