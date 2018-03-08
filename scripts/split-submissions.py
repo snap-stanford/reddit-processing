@@ -68,11 +68,11 @@ def split_by_submission(cache_dir="comment_maps"):
 
 
 
-def mapped_split(data_set_dir, data_set_name, mapped_col, result_column):
+def mapped_split(reddit_dir, data_set_name, mapped_col, result_column):
 
-    table_files = os.listdir(os.path.join(data_set_dir, data_set_name))
+    table_files = os.listdir(os.path.join(reddit_dir, data_set_name))
     args_list = [
-        (data_set_dir, data_set_name, table_fname, mapped_col, result_column)
+        (reddit_dir, data_set_name, table_fname, mapped_col, result_column)
         for table_fname in table_files
     ]
 
@@ -83,7 +83,7 @@ def unpack_mapped_split_core(args):
     mapped_split_core(*args)
 
 def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, result_column):
-    table_file_path = os.path.join(reddit_path, table_file_name)
+    table_file_path = os.path.join(reddit_path, data_set_name, table_file_name)
 
     logger.debug("Reading: %s" % table_file_name)
     df = pd.read_csv(table_file_path, engine='python')
