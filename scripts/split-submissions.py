@@ -95,8 +95,16 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     df[result_column] = df[mapped_col].apply(get_base_submission)
     df[result_column].fillna("missing", inplace=True)
 
+    # Make a map of output files for each of the splits as well as creating the
+    # directories that they belong in
+    output_file_map = {}
+    for i in target_directories:
+        target_sub_dir = os.path.join(target_directories[i], data_set_name)
+        if not os.path.exists(target_sub_dir):
+            os.mkdir(target_sub_dir)
+        output_file_map[i] = os.path.join(target_sub_dir, table_file_name)
+
     logger.debug("Splitting: %s" % table_file_name)
-    output_file_map = {i: os.path.join(target_directories[i], data_set_name, table_file_name) for i in target_directories}
     split_data_frame(df, result_column, get_bucket, output_file_map, compress=compress)
 
 # basic operations
