@@ -46,7 +46,7 @@ def split_by_submission(cache_dir="comment_maps"):
 
     global comment_post_mapping  # stores map from comment fullname -> base submission id
 
-    if not os.path.isdir(cache_dir):
+    if not os.path.isdir(cache_dir) or not os.listdir(cache_dir):  # No such directory or empty directory
         # The comment data must be loaded and read so that we have the mapping
         # from comment full-name to base (submission) full-name, which is required for the splitting
         # of the other data sets
@@ -129,7 +129,7 @@ def split_file(on, file_path, targets, map_columns=None, maps_dir=None):
     if map_columns:
         logger.debug("Mapping column %s of %s" % (map_columns[0], file_name))
         output_file = os.path.join(maps_dir, os.path.splitext(file_name)[0] + "_map.txt")
-        col_map = dict(zip(df[map_columns[0]], df[map_columns[1]]))
+        col_map = dict(zip(df[map_columns[0]], df[map_columns[1]]))  # Get the mapping of one column to another
         logger.debug("Saving map: %s" % output_file)
         save_dict(col_map, output_file)
 
