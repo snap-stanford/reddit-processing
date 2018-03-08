@@ -114,8 +114,10 @@ def split_data_set(on, data_set_path, sub_dir_name, map_columns=None, maps_dir=N
     pool = mp.Pool(pool_size)
     pool.map(unpack_split_file, args_list)
 
+
 def unpack_split_file(args):
     split_file(*args)
+
 
 def split_file(on, file_path, targets, map_columns=None, maps_dir=None):
     file_name = os.path.split(file_path)[1]
@@ -129,7 +131,9 @@ def split_file(on, file_path, targets, map_columns=None, maps_dir=None):
             os.mkdir(maps_dir)
         output_file = os.path.join(maps_dir, os.path.split(file_name) + "_map")
         col_map = dict(zip(df[map_columns[0]], df[map_columns[1]]))
+        logger.debug("Saving map: %s" % output_file)
         save_dict(col_map, output_file)
+
 
 def split_data_frame(df, on, assign_split, output_file_map, temp_col='bkt', compress=False):
     df[temp_col] = df[on].apply(assign_split)
