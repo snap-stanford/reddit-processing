@@ -123,7 +123,9 @@ def split_file(on, file_path, targets, map_columns=None, maps_dir=None):
     logger.debug("Reading: %s" % file_name)
     df = pd.read_csv(file_path, engine='python')
     logger.debug("Splitting: %s" % file_name)
-    split_data_frame(df, on, get_bucket, targets)
+
+    file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
+    split_data_frame(df, on, get_bucket, file_targets)
     if map_columns:
         logger.debug("Mapping column %s of %s" % (map_columns[0], file_name))
         output_file = os.path.join(maps_dir, os.path.split(file_name) + "_map")
