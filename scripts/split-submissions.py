@@ -62,19 +62,17 @@ def split_by_submission(cache_dir="comment_maps"):
     split_data_set("post_fullname", input_directory, "stanford_submission_data")
 
     #  Now split the rest of the data while adding a column using the mapping that we have
-    dirs_to_split = ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]
-    data_sets = [os.path.join(input_directory, directory) for directory in dirs_to_split]
-
-    for data_set_dir in data_sets:
-        mapped_split(data_set_dir, 'target_fullname', 'post_fullname')
+    for data_set_name in ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]:
+        mapped_split(input_directory, data_set_name, 'target_fullname', 'post_fullname')
 
 
 
-def mapped_split(data_set_dir, mapped_col, result_column):
+def mapped_split(data_set_dir, data_set_name, mapped_col, result_column):
 
+    table_files = os.listdir(os.path.join(data_set_dir, data_set_name))
     args_list = [
-        (data_set_dir, table_fname, mapped_col, result_column)
-        for table_fname in os.listdir(data_set_dir)
+        (data_set_dir, data_set_name, table_fname, mapped_col, result_column)
+        for table_fname in table_files
     ]
 
     pool = mp.Pool(pool_size)
@@ -83,7 +81,7 @@ def mapped_split(data_set_dir, mapped_col, result_column):
 def unpack_mapped_split_core(args):
     mapped_split_core(*args)
 
-def mapped_split_core(data_set_dir, table_file_name, mapped_col, result_column):
+def mapped_split_core(data_set_dir, data_set_name, table_file_name, mapped_col, result_column):
     table_file_path = os.path.join(data_set_dir, table_file_name)
 
     logger.debug("Reading: %s" % table_file_name)
@@ -97,7 +95,7 @@ def mapped_split_core(data_set_dir, table_file_name, mapped_col, result_column):
     df[result_column].fillna("missing", inplace=True)
 
     logger.debug("Splitting: %s" % table_file_name)
-    output_file_map = {i: os.path.join(target_directories[i], table_file_name) for i in target_directories}
+    output_file_map = {i: os.path.join(target_directories[i], data_set_name, table_file_name) for i in target_directories}
     split_data_frame(df, result_column, get_bucket, output_file_map, compress=compress)
 
 # basic operations
@@ -240,5 +238,4 @@ def main():
     split_by_submission(cache_dir=args.cache)
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": main()
