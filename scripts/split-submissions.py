@@ -50,7 +50,7 @@ def split_by_submission(cache_dir="comment_maps"):
         # The comment data must be loaded and read so that we have the mapping
         # from comment full-name to base (submission) full-name, which is required for the splitting
         # of the other data sets
-        os.mkdir(cache_dir)
+        if not os.path.isdir(cache_dir): os.mkdir(cache_dir)
         logger.info("No comment/submissions map cache found. Processing comment tables...")
         split_data_set("post_fullname", input_directory, "stanford_comment_data",
                        map_columns=("comment_fullname", "post_fullname"), maps_dir=cache_dir)
