@@ -1,111 +1,111 @@
 #!/usr/bin/env python
 """
-File: join-reddit.py
+File: merge-reddit.py
 
-This file combines the output of the
+This file combines the output of the split scripts
+
+For merging by user pass the: "user_id"
+for merging by submission pass: "post_fullname"
 
 
+Author: Jon Deaton
+Date: March, 2018
 """
 
-import os, sys, csv
-import logging, argparse
-import hashlib
+import os, sys
+import log
+import argparse
 import multiprocessing as mp
 import pandas as pd
-from enum import Enum
+from reddit import *
 
 input_directory = ""
 output_directory = ""
-pool_size = 64
 target_directories = {}
-sequential = False
 
-final_columns = ['user_id', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
-
-
-class DataType(Enum):
-    users = 1
-    votes = 2
-    comments = 3
-    submissions = 4
-    subscriptions = 5
-    removals = 6
-    reports = 7
-    unknown = 8
+final_user_columns = ['user_id', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
+final_submission_columns = ['post_fullname', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
 
 
 def get_aggregate_file(split_directory):
     return os.path.join(output_directory, os.path.split(split_directory)[1] + ".csv")
 
 
-def get_data_type(directory):
-    if "user" in directory: return DataType.users
-    if "vote" in directory: return DataType.votes
-    if "comment" in directory: return DataType.comments
-    if "submission" in directory: return DataType.submissions
-    if "subscription" in directory: return DataType.subscriptions
-    if "removal" in directory: return DataType.removals
-    if "report" in directory: return DataType.reports
-    return DataType.unknown
-
-
-def listdir(directory):
-    return list(map(lambda d: os.path.join(directory, d), os.listdir(directory)))
-
-
-def join():
-    split_directories = listdir(input_directory)
-
+def merge_split_dataset():
     if sequential:
-        for dir in split_directories:
-            join_dir(dir)
+        for dir in listdir(input_directory):
+            merge_directory(dir)
     else:
         pool = mp.Pool(pool_size)
-        pool.map(join_dir, split_directories)
+        pool.map(merge_directory, listdir(input_directory))
 
 
-def join_dir(dir):
-    logger.info("Joining directory: %s" % dir)
+def merge_directory(directory):
+    """
+    Merge together a portion of the reddit data set that has been split up into a single
+    directory and write the result to the output file
 
-    def get_data_set_df(data_set):
+    In the context of the typical use case these would be one the directories named
+    "scratch/split/00001"
+
+    :param directory: A single directory
+    :return: None
+    """
+    logger.info("Joining directory: %s" % directory)
+
+    def get_data_set_df(data_set, drop_cols=['bucket', 'bkt']):
         logger.debug("Concatenating: %s" % data_set)
-        df = aggregate(data_set)
+        df = aggregate_dataframes(data_set)
         logger.debug("Finished concatenating: %s" % data_set)
+
+        # remove the specified columns
+        for col in drop_cols:
+            if col in df.columns:
+                df.drop(col, axis=1, inplace=True)
 
         logger.debug("Modifying columns: %s" % data_set)
         df = rearrange_for_user_join(df, get_data_type(data_set))
         logger.debug("Finished modifying: %s" % data_set)
         return df
 
-    logger.debug("Concatenating aggregated directory: %s" % dir)
-    df = pd.concat(map(get_data_set_df, listdir(dir)))
-    logger.debug("Finished concatenating: %s" % dir)
+    logger.debug("Concatenating aggregated directory: %s" % directory)
+    df = pd.concat(map(get_data_set_df, listdir(directory)))
+    logger.debug("Finished concatenating: %s" % directory)
 
-    logger.debug("Sorting: %s" % dir)
+    logger.debug("Sorting: %s" % directory)
     df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
-    df = df[final_columns]  # rearrange columns...
+    df = df[final_user_columns]  # rearrange columns...
 
-    final_output = get_aggregate_file(dir)
+    final_output = get_aggregate_file(directory)
     logger.info("Writing result: %s" % final_output)
     df.to_csv(final_output, index=False)
 
 
-def aggregate(directory):
+def aggregate_dataframes(directory):
+    """
+    Reads every file from a directory into a pandas data frame,
+    and concatenates them together into one large data frame
+    :param directory: Directory containing files with pandas data frames
+    :return: A single data frame made by concatenating all dataframes together
+    """
     def read(file):
         try:
             return pd.read_csv(file, compression='infer')
         except UnicodeDecodeError:
             return pd.read_csv(file, compression='gzip')
 
-    df = pd.concat(map(read, listdir(directory)))
-
-    if 'bucket' in df.columns:
-        df.drop('bucket', axis=1, inplace=True)
-
-    return df
+    return pd.concat(map(read, listdir(directory)))
 
 
 def rearrange_for_user_join(df, data_type, event_type='event_type'):
+    """
+    Converts a data frame containing "split" reddit data into the
+    final output format by rearanging, and renaming columns.
+    :param df: A data frame to modify
+    :param data_type: The type of data stored in the data frame
+    :param event_type: The name specifying what kind of event is stored in the data frame
+    :return: The modified data frame
+    """
     if data_type == DataType.unknown: return
 
     base_cols = ['user_id', 'endpoint_ts', event_type]
@@ -152,8 +152,26 @@ def rearrange_for_user_join(df, data_type, event_type='event_type'):
     return df
 
 
+def rearrange_for_submision_join(df, data_type, event_type='event_type'):
+    """
+    Converts a data frame containing "split" reddit data into the
+    final output format by rearanging, and renaming columns.
+    :param df: A data frame to modify
+    :param data_type: The type of data stored in the data frame
+    :param event_type: The name specifying what kind of event is stored in the data frame
+    :return: The modified data frame
+    """
+    # todo!
+    pass
+
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="Join the Reddit data-set", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    """
+    Parse the command line options for this file
+
+    :return: An argparse object containing parsed arguments
+    """
+    parser = argparse.ArgumentParser(description="Merge the Reddit data-set", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     io_options_group = parser.add_argument_group("I/O Options")
     io_options_group.add_argument('-i', "--input", help="Input directory")
@@ -171,52 +189,11 @@ def parse_args():
     return parser.parse_args()
 
 
-def init_logger(args):
-    if args.log == 'None':  # No --log flag
-        log_file = None
-    elif not args.log:  # Flag but no argument
-        log_file = os.path.join("log", os.path.splitext(os.path.basename(__file__))[0] + '_log.txt')
-    else:  # flag with argument
-        log_file = args.log
-
-    if log_file:  # Logging file was specified
-        log_file_dir = os.path.split(log_file)[0]
-        if log_file_dir and not os.path.exists(log_file_dir):
-            os.mkdir(log_file_dir)
-
-        if os.path.isfile(log_file):
-            open(log_file, 'w').close()
-
-    global logger
-    if args.debug:
-        log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-    elif args.verbose:
-        log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-    else:
-        log_formatter = logging.Formatter('[log][%(levelname)s] - %(message)s')
-
-    logger = logging.getLogger(__name__)
-    if log_file:
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(log_formatter)
-        logger.addHandler(file_handler)
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(log_formatter)
-    logger.addHandler(console_handler)
-
-    if args.debug:
-        level = logging.DEBUG
-    elif args.verbose:
-        level = logging.INFO
-    else:
-        level = logging.WARNING
-
-    logger.setLevel(level)
-
-
 def main():
     args = parse_args()
-    init_logger(args)
+
+    global logger
+    logger = log.init_logger(args)
 
     global input_directory, output_directory, sequential, pool_size
     input_directory = os.path.expanduser(args.input)
@@ -235,7 +212,7 @@ def main():
     else:
         logger.debug("Output directory: %s" % output_directory)
 
-    join()
+    merge_split_dataset()
 
 
 if __name__ == "__main__":

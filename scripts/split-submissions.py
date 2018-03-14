@@ -1,10 +1,16 @@
 #!/usr/bin/env python
-import os, sys, csv
-import logging, argparse
-import hashlib, pickle
+"""
+File: split-submissions.py
+
+Author: Jon Deaton
+Date: March, 2018
+"""
+
+import log, argparse
 import multiprocessing as mp
 import pandas as pd
-import numpy as np
+
+from reddit import *
 
 input_directory = ""
 output_directory = ""
@@ -15,23 +21,8 @@ compress = False
 comment_post_mapping = None
 
 
-def hash(s):
-    return int(hashlib.md5(s.encode()).hexdigest(), 16)
-
-
 def get_bucket(s):
     return hash(s) % num_splits
-
-
-def listdir(directory):
-    return list(map(lambda d: os.path.join(directory, d), os.listdir(directory)))
-
-
-def save_dict(d, fname):
-    pickle.dump(d, open(fname, 'wb'))
-
-def load_dict(fname):
-    return pickle.load(open(fname, 'rb'))
 
 def load_cache(dirname):
     result = {}
@@ -50,7 +41,7 @@ def split_by_submission(cache_dir="comment_maps"):
         # The comment data must be loaded and read so that we have the mapping
         # from comment full-name to base (submission) full-name, which is required for the splitting
         # of the other data sets
-        if not os.path.isdir(cache_dir): os.mkdir(cache_dir)
+        mkdir(cache_dir)
         logger.info("No comment/submissions map cache found. Processing comment tables...")
         split_data_set("post_fullname", input_directory, "stanford_comment_data",
                        map_columns=("comment_fullname", "post_fullname"), maps_dir=cache_dir)
@@ -67,7 +58,6 @@ def split_by_submission(cache_dir="comment_maps"):
         mapped_split(input_directory, data_set_name, 'target_fullname', 'post_fullname')
 
 
-
 def mapped_split(reddit_dir, data_set_name, mapped_col, result_column):
 
     table_files = os.listdir(os.path.join(reddit_dir, data_set_name))
@@ -79,8 +69,10 @@ def mapped_split(reddit_dir, data_set_name, mapped_col, result_column):
     pool = mp.Pool(pool_size)
     pool.map(unpack_mapped_split_core, args_list)
 
+
 def unpack_mapped_split_core(args):
     mapped_split_core(*args)
+
 
 def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, result_column):
     table_file_path = os.path.join(reddit_path, data_set_name, table_file_name)
@@ -100,54 +92,26 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     output_file_map = {}
     for i in target_directories:
         target_sub_dir = os.path.join(target_directories[i], data_set_name)
-        try: os.mkdir(target_sub_dir)
-        except FileExistsError: pass
+        mkdir(target_sub_dir)
 
         output_file_map[i] = os.path.join(target_sub_dir, table_file_name)
 
     logger.debug("Splitting: %s" % table_file_name)
     split_data_frame(df, result_column, get_bucket, output_file_map, compress=compress)
 
+
 # basic operations
 def split_data_set(on, reddit_path, data_set_name, map_columns=None, maps_dir=None):
     targets = {}
     for i in range(num_splits):
         targets[i] = os.path.join(target_directories[i], data_set_name)
-        try: os.mkdir(targets[i])
-        except FileExistsError: pass
+        mkdir(targets[i])
 
     full_sub_data_path = os.path.join(reddit_path, data_set_name)
     data_files = map(lambda f: os.path.join(full_sub_data_path, f), os.listdir(full_sub_data_path))
-    args_list = [(on, table_file, targets, map_columns, maps_dir) for table_file in data_files]
+    args_list = [(on, table_file, targets, num_splits, map_columns, maps_dir) for table_file in data_files]
     pool = mp.Pool(pool_size)
     pool.map(unpack_split_file, args_list)
-
-
-def unpack_split_file(args):
-    split_file(*args)
-
-
-def split_file(on, file_path, targets, map_columns=None, maps_dir=None):
-    file_name = os.path.split(file_path)[1]
-    logger.debug("Reading: %s" % file_name)
-    df = pd.read_csv(file_path, engine='python')
-    logger.debug("Splitting: %s" % file_name)
-
-    file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
-    split_data_frame(df, on, get_bucket, file_targets)
-    if map_columns:
-        logger.debug("Mapping column %s of %s" % (map_columns[0], file_name))
-        output_file = os.path.join(maps_dir, os.path.splitext(file_name)[0] + "_map.txt")
-        col_map = dict(zip(df[map_columns[0]], df[map_columns[1]]))  # Get the mapping of one column to another
-        logger.debug("Saving map: %s" % output_file)
-        save_dict(col_map, output_file)
-
-
-def split_data_frame(df, on, assign_split, output_file_map, temp_col='bkt', compress=False):
-    df[temp_col] = df[on].apply(assign_split)
-    for i in output_file_map:
-        df_out = df[df[temp_col] == i].drop(temp_col, axis=1)  # select rows and drop temporary column
-        df_out.to_csv(output_file_map[i], index=False, compression='gzip' if compress else None)
 
 
 def create_target_directories():
@@ -158,14 +122,19 @@ def create_target_directories():
         if os.path.isfile(target_dir):
             logger.error("File exists: %s" % target_dir)
             exit(1)
-        try: os.mkdir(target_dir)  # create it if it doesn't exist
-        except FileExistsError: pass
+        mkdir(target_dir)
 
     return target_directories
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Split the Reddit data-set", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    """
+    Parse the command line options for this file
+
+    :return: An argparse object containing parsed arguments
+    """
+    parser = argparse.ArgumentParser(description="Split the Reddit data-set by submission",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     io_options_group = parser.add_argument_group("I/O Options")
     io_options_group.add_argument('-in', "--input", help="Input directory")
@@ -186,47 +155,16 @@ def parse_args():
     return parser.parse_args()
 
 
-def init_logger(args):
+def main():
+    """
+    Parse the command line options for this file
 
-    if args.log == 'None':  # No --log flag
-        log_file = None
-    elif not args.log:  # Flag but no argument
-        log_file = os.path.join("log", os.path.splitext(os.path.basename(__file__))[0] + '_log.txt')
-    else:  # flag with argument
-        log_file = args.log
-
-    if log_file:  # Logging file was specified
-        log_file_dir = os.path.split(log_file)[0]
-        if log_file_dir and not os.path.exists(log_file_dir):
-            os.mkdir(log_file_dir)
-
-        if os.path.isfile(log_file):
-            open(log_file, 'w').close()
+    :return: An argparse object containing parsed arguments
+    """
+    args = parse_args()
 
     global logger
-    if args.debug: log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-    elif args.verbose: log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-    else: log_formatter = logging.Formatter('[log][%(levelname)s] - %(message)s')
-
-    logger = logging.getLogger(__name__)
-    if log_file:
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(log_formatter)
-        logger.addHandler(file_handler)
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(log_formatter)
-    logger.addHandler(console_handler)
-
-    if args.debug: level = logging.DEBUG
-    elif args.verbose: level = logging.INFO
-    else: level = logging.WARNING
-
-    logger.setLevel(level)
-
-
-def main():
-    args = parse_args()
-    init_logger(args)
+    logger = log.init_logger(args)
 
     global input_directory, output_directory, num_splits, pool_size, compress
     input_directory = os.path.expanduser(args.input)

@@ -1,9 +1,15 @@
 #!/usr/bin/env python
-import os, sys, csv
-import logging, argparse
-import hashlib
+"""
+File: split-users.py
+
+Author: Jon Deaton
+
+"""
+
+import log, argparse
 import multiprocessing as mp
 import pandas as pd
+from reddit import *
 
 input_directory = ""
 output_directory = ""
@@ -11,10 +17,6 @@ num_splits = 1024
 pool_size = 20
 target_directories = {}
 compress = False
-
-
-def hash(s):
-    return int(hashlib.md5(s.encode()).hexdigest(), 16)
 
 
 def get_bucket(s):
@@ -40,27 +42,13 @@ def split_data_set(on, data_set_path, sub_dir_name):
     targets = {}
     for i in range(num_splits):
         targets[i] = os.path.join(target_directories[i], sub_dir_name)
-        if not os.path.isdir(targets[i]):
-            os.mkdir(targets[i])
+        mkdir(targets[i])
 
     data_files = map(lambda f: os.path.join(data_set_path, f), os.listdir(data_set_path))
-    args_list = [(on, file, targets) for file in data_files]
+    args_list = [(on, file, targets, num_splits) for file in data_files]
     pool = mp.Pool(pool_size)
     pool.map(unpack_split_file, args_list)
 
-
-def unpack_split_file(args):
-    split_file(*args)
-
-def split_file(on, file_path, targets):
-    file_name = os.path.split(file_path)[1]
-    logger.debug("Reading: %s" % file_path)
-    df = pd.read_csv(file_path, engine='python')
-    logger.debug("Splitting: %s" % file_path)
-    df['bucket'] = df[on].apply(get_bucket)
-    for i in range(num_splits):
-        output_file = os.path.join(targets[i], file_name)
-        df[df['bucket'] == i].drop('bucket', axis=1).to_csv(output_file, index=False, compression='gzip' if compress else None)
 
 def create_target_directories():
     global target_directories
@@ -70,12 +58,16 @@ def create_target_directories():
         if os.path.isfile(target_dir):
             logger.error("File exists: %s" % target_dir)
             exit(1)
-        if not os.path.isdir(target_dir):
-            os.mkdir(target_dir)  # create it if it doesn't exist
+        mkdir(target_dir)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Split the Reddit data-set", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    """
+    Parse the command line options for this file
+
+    :return: An argparse object containing parsed arguments
+    """
+    parser = argparse.ArgumentParser(description="Split the Reddit data-set by user", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     io_options_group = parser.add_argument_group("I/O Options")
     io_options_group.add_argument('-in', "--input", help="Input directory")
@@ -99,52 +91,11 @@ def parse_args():
     return parser.parse_args()
 
 
-def init_logger(args):
-    if args.log == 'None':  # No --log flag
-        log_file = None
-    elif not args.log:  # Flag but no argument
-        log_file = os.path.join("log", os.path.splitext(os.path.basename(__file__))[0] + '_log.txt')
-    else:  # flag with argument
-        log_file = args.log
-
-    if log_file:  # Logging file was specified
-        log_file_dir = os.path.split(log_file)[0]
-        if log_file_dir and not os.path.exists(log_file_dir):
-            os.mkdir(log_file_dir)
-
-        if os.path.isfile(log_file):
-            open(log_file, 'w').close()
-
-    global logger
-    if args.debug:
-        log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-    elif args.verbose:
-        log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-    else:
-        log_formatter = logging.Formatter('[log][%(levelname)s] - %(message)s')
-
-    logger = logging.getLogger(__name__)
-    if log_file:
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(log_formatter)
-        logger.addHandler(file_handler)
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(log_formatter)
-    logger.addHandler(console_handler)
-
-    if args.debug:
-        level = logging.DEBUG
-    elif args.verbose:
-        level = logging.INFO
-    else:
-        level = logging.WARNING
-
-    logger.setLevel(level)
-
-
 def main():
     args = parse_args()
-    init_logger(args)
+
+    global logger
+    logger = log.init_logger(args)
 
     global input_directory, output_directory, num_splits, pool_size, compress
     input_directory = os.path.expanduser(args.input)

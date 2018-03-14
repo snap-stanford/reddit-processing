@@ -1,5 +1,15 @@
 #!/usr/bin/env python2.7
-import csv, sys, os
+"""
+File: convert.py
+
+Converts a set of CSV files in a directory into TSV format in an output directory
+
+Author: Jon Deaton
+Date: February, 2018
+"""
+
+import os
+import csv
 import logging, argparse
 import multiprocessing as mp
 
@@ -39,6 +49,12 @@ def parse_args():
 
 
 def init_logger(args):
+    """
+    Initializes a global logger
+    :param args: An argparse parsed-arguments object containing "verbose", "debug", and "log"
+    attributes used to set the settings of the logger
+    :return: None
+    """
     if args.log == 'None':  # No --log flag
         log_file = None
     elif not args.log:  # Flag but no argument
@@ -54,7 +70,6 @@ def init_logger(args):
         if os.path.isfile(log_file):
             open(log_file, 'w').close()
 
-    global logger
     if args.debug:
         log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
     elif args.verbose:
@@ -62,7 +77,8 @@ def init_logger(args):
     else:
         log_formatter = logging.Formatter('[log][%(levelname)s] - %(message)s')
 
-    logger = logging.getLogger(__name__)
+    global logger
+    logger = logging.getLogger('root')
     if log_file:
         file_handler = logging.FileHandler(log_file)
         file_handler.setFormatter(log_formatter)
@@ -77,7 +93,6 @@ def init_logger(args):
         level = logging.INFO
     else:
         level = logging.WARNING
-
     logger.setLevel(level)
 
 
@@ -114,6 +129,7 @@ def main():
     pool = mp.Pool(args.pool_size)
     pool.map(convert_csv_to_tsv_unpack, zip(input_csvs, output_csvs))
     logger.debug("Conversion complete.")
+
 
 if __name__ == "__main__":
     main()
