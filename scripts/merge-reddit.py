@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+"""
+File: join-reddit.py
+
+This file combines the output of the
+
+
+"""
+
 import os, sys, csv
 import logging, argparse
 import hashlib
@@ -65,7 +73,7 @@ def join_dir(dir):
         logger.debug("Finished concatenating: %s" % data_set)
 
         logger.debug("Modifying columns: %s" % data_set)
-        df = rearrange(df, get_data_type(data_set))
+        df = rearrange_for_user_join(df, get_data_type(data_set))
         logger.debug("Finished modifying: %s" % data_set)
         return df
 
@@ -97,7 +105,7 @@ def aggregate(directory):
     return df
 
 
-def rearrange(df, data_type, event_type='event_type'):
+def rearrange_for_user_join(df, data_type, event_type='event_type'):
     if data_type == DataType.unknown: return
 
     base_cols = ['user_id', 'endpoint_ts', event_type]
