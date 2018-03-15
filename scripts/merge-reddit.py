@@ -266,7 +266,7 @@ def main():
     args = parse_args()
 
     global logger
-    logger = log.init_logger(args)
+    logger = log.init_logger(args.verbose, args.debug, log_file="logs/%s_log.txt" % __file__)
 
     input_directory = os.path.expanduser(args.input)
     output_directory = os.path.expanduser(args.output)
@@ -283,6 +283,8 @@ def main():
         logger.debug("Output directory: %s" % output_directory)
 
     strategy = MergeType.submission if args.submissions else MergeType.user
+
+    logger.info("Merge type: %s" % strategy)
     merge_dataset(input_directory, output_directory, strategy, pool_size=args.pool_size, sequential=args.sequential)
 
 
