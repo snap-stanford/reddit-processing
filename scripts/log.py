@@ -9,7 +9,6 @@ Date: March 2018
 
 import os
 import logging
-from builtins import FileExistsError
 
 
 def init_logger(verbose=False, debug=False, log_file=None):
