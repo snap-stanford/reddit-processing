@@ -208,7 +208,7 @@ def main():
     logger = log.init_logger_argparse(args)
 
     global pool_size, compress
-    pool_size = args.pool_size()
+    pool_size = args.pool_size
     compress = args.compress
 
     input_directory = os.path.expanduser(args.input)
