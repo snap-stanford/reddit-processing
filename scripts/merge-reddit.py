@@ -77,9 +77,9 @@ def merge_data_subset(directory, output_directory, strategy):
     logger.info("Merging directory: %s" % directory)
 
     def get_data_set_df(data_subset_dir, drop_cols=['bucket', 'bkt']):
-        logger.debug("Aggregating: %s" % data_subset_dir)
+        logger.debug("Loading data from: %s" % data_subset_dir)
         df = aggregate_dataframes(data_subset_dir)
-        logger.debug("Finished aggregating: %s" % data_subset_dir)
+        logger.debug("Finished loading: %s" % data_subset_dir)
 
         # remove the specified columns
         for col in drop_cols:
@@ -91,14 +91,14 @@ def merge_data_subset(directory, output_directory, strategy):
             df = rearrange_for_user_join(df, get_data_type(data_subset_dir))
         else:
             df = rearrange_for_submission_join(df, get_data_type(data_subset_dir))
-        logger.debug("Finished modifying: %s" % data_subset_dir)
+        logger.debug("Finished modifying columns: %s" % data_subset_dir)
         return df
 
-    logger.debug("Concatenating aggregated directory: %s" % directory)
+    logger.debug("Aggregating subset directory: %s" % directory)
     df = pd.concat(map(get_data_set_df, listdir(directory)))
-    logger.debug("Finished concatenating: %s" % directory)
+    logger.debug("Finished aggregating: %s" % directory)
 
-    logger.debug("Sorting: %s" % directory)
+    logger.debug("Sorting: " % directory)
     if strategy == MergeType.user:
         df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
         final_columns = ['user_id', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
@@ -108,7 +108,7 @@ def merge_data_subset(directory, output_directory, strategy):
     df = df[final_columns]  # rearrange columns...
 
     final_output = get_aggregate_file(output_directory, directory)
-    logger.info("Writing result: %s" % final_output)
+    logger.info("Writing output: %s" % final_output)
     df.to_csv(final_output, index=False)
 
 
