@@ -9,6 +9,7 @@ Date: March 2018
 
 import os
 import logging
+from builtins import FileExistsError
 
 
 def init_logger(verbose=False, debug=False, log_file=None):
@@ -25,7 +26,7 @@ def init_logger(verbose=False, debug=False, log_file=None):
         if log_file_dir:
             try:
                 os.mkdir(log_file_dir)
-            except FileExistsError:
+            except:
                 pass
 
         if os.path.isfile(log_file):

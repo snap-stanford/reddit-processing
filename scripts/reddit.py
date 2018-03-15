@@ -12,6 +12,7 @@ import hashlib
 import pickle
 from enum import Enum
 import logging
+from builtins import FileExistsError
 import pandas as pd
 
 logger = logging.getLogger('root')
