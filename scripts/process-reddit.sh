@@ -23,8 +23,8 @@ PYTHON=$(which python)
 
 # Split and merge by user
 $PYTHON ./split-users.py --debug --input $REDDIT --output $USERS_SPLIT_DIR
-$PYTHON ./merge-reddit.py --debug --on "user_id" --input $USERS_SPLIT_DIR --output $USERS_OUTPUT
+$PYTHON ./merge-reddit.py --debug --users --input $USERS_SPLIT_DIR --output $USERS_OUTPUT
 
 # Split and merge by submission
 $PYTHON ./split-submissions.py --debug --input $REDDIT --output $SUBMISSIONS_SPLIT_DIR
-$PYTHON ./merge-reddit.py --debug --on "post_fullname" --input $SUBMISSIONS_SPLIT_DIR --output $SUBMISSIONS_OUTPUT
+$PYTHON ./merge-reddit.py --debug --submissions --input $SUBMISSIONS_SPLIT_DIR --output $SUBMISSIONS_OUTPUT

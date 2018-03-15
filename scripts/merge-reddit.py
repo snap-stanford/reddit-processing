@@ -99,11 +99,11 @@ def merge_data_subset(directory, output_directory, strategy):
     logger.debug("Finished concatenating: %s" % directory)
 
     logger.debug("Sorting: %s" % directory)
-    df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
-
     if strategy == MergeType.user:
+        df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
         final_columns = ['user_id', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
     else:
+        df.sort_values(by=['post_fullname', 'endpoint_ts'], inplace=True)
         final_columns = ['post_fullname', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
     df = df[final_columns]  # rearrange columns...
 
