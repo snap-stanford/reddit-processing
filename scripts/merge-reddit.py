@@ -279,9 +279,8 @@ def main():
     else:
         logger.debug("Output directory: %s" % output_directory)
 
-    merge_dataset(input_directory, output_directory, type=
-
-                  pool_size=args.pool_size, sequential=args.sequential)
+    strategy = MergeType.submission if args.submissions else MergeType.user
+    merge_dataset(input_directory, output_directory, strategy, pool_size=args.pool_size, sequential=args.sequential)
 
 
 if __name__ == "__main__":
