@@ -77,9 +77,9 @@ def merge_data_subset(directory, output_directory, strategy):
     logger.info("Merging directory: %s" % directory)
 
     def get_data_set_df(data_subset_dir, drop_cols=['bucket', 'bkt']):
-        logger.debug("Concatenating: %s" % data_subset_dir)
+        logger.debug("Aggregating: %s" % data_subset_dir)
         df = aggregate_dataframes(data_subset_dir)
-        logger.debug("Finished concatenating: %s" % data_subset_dir)
+        logger.debug("Finished aggregating: %s" % data_subset_dir)
 
         # remove the specified columns
         for col in drop_cols:
@@ -99,9 +99,6 @@ def merge_data_subset(directory, output_directory, strategy):
     logger.debug("Finished concatenating: %s" % directory)
 
     logger.debug("Sorting: %s" % directory)
-    logger.warning("peacing the f out")
-    exit()
-
     if strategy == MergeType.user:
         df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
         final_columns = ['user_id', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
