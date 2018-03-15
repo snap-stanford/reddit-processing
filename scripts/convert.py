@@ -50,7 +50,7 @@ def parse_args():
     io_options_group.add_argument('-o', "--output", help="Output directory")
 
     options_group = parser.add_argument_group("Options")
-    options_group.add_argument('-p', '--pool-size', type=int, default=10, help="Thread pool size")
+    options_group.add_argument('-p', '--pool-size', type=int, default=16, help="Thread pool size")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
