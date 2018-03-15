@@ -39,6 +39,9 @@ def get_data_type(directory):
     :return: The type of data stored in that directory
     """
     dir = os.path.split(directory)[1]
+    if not dir:
+        dir = os.path.split(os.path.split(directory)[0])[1]
+
     if "user" in dir: return DataType.users
     if "vote" in dir: return DataType.votes
     if "comment" in dir: return DataType.comments
