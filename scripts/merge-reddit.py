@@ -62,13 +62,16 @@ def merge_dir_unpack(args):
 
 def merge_data_subset(directory, output_directory, strategy):
     """
+    Merge one independent subset of reddit data
+
     Merge together a portion of the reddit data set that has been split up into a single
-    directory and write the result to the output file
-
-    In the context of the typical use case these would be one the directories named
+    directory and write the result to the output file. In the context of the typica
+    l use case these would be one the directories named
     "scratch/split/00001"
-
     :param directory: A single directory
+    :param output_directory: The output directory to write all the stuff to
+    :param strategy: An instance of MergeType specifying whether to merge based on user ids
+    or based on submission ids
     :return: None
     """
     logger.info("Merging directory: %s" % directory)
