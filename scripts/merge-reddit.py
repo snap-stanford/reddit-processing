@@ -266,7 +266,7 @@ def main():
     args = parse_args()
 
     global logger
-    logger = log.init_logger_argparse(args.verbose, args.debug, log_file="logs/%s_log.txt" % __file__)
+    logger = log.init_logger_argparse(args)
 
     input_directory = os.path.expanduser(args.input)
     output_directory = os.path.expanduser(args.output)
