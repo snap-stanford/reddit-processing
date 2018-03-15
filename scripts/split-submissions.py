@@ -164,7 +164,7 @@ def main():
     args = parse_args()
 
     global logger
-    logger = log.init_logger(args)
+    logger = log.init_logger_argparse(args)
 
     global input_directory, output_directory, num_splits, pool_size, compress
     input_directory = os.path.expanduser(args.input)

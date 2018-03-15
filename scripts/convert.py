@@ -64,7 +64,7 @@ def main():
     args = parse_args()
 
     global logger
-    logger = log.init_logger(args)
+    logger = log.init_logger_argparse(args)
 
     logger.debug("Input directory: %s" % args.input)
     if not os.path.exists(args.input):

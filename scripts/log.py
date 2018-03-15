@@ -11,23 +11,6 @@ import os
 import logging
 
 
-def init_logger(args):
-    """
-    Initializes a global logger
-
-    :param args: An argparse parsed-arguments object containing "verbose", "debug", and "log"
-    attributes used to set the settings of the logger
-    :return: None
-    """
-    if not hasattr(args, 'log') or args.log == 'None':  # No --log flag
-        log_file = None
-    elif not args.log:  # Flag but no argument
-        log_file = os.path.join("logs", os.path.splitext(os.path.basename(__file__))[0] + '_log.txt')
-    else:  # flag with argument
-        log_file = args.log
-    return init_logger(verbose=args.verbose, debug=args.debug, log_file=log_file)
-
-
 def init_logger(verbose=False, debug=False, log_file=None):
     """
     Initializes a global logger
@@ -73,3 +56,23 @@ def init_logger(verbose=False, debug=False, log_file=None):
 
     logger.setLevel(level)
     return logger
+
+
+def init_logger_argparse(args):
+    """
+    Initializes a global logger
+
+    :param args: An argparse parsed-arguments object containing "verbose", "debug", and "log"
+    attributes used to set the settings of the logger
+    :return: None
+    """
+    if not hasattr(args, 'log') or args.log == 'None':  # No --log flag
+        log_file = None
+    elif not args.log:  # Flag but no argument
+        log_file = os.path.join("logs", "log.txt")
+    else:  # flag with argument
+        log_file = args.log
+    return init_logger(verbose=args.verbose, debug=args.debug, log_file=log_file)
+
+
+
