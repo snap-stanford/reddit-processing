@@ -3,7 +3,6 @@ File: reddit_utils
 
 Utility functions and definitions for processing the reddit data-set
 
-
 Author: Jon Deaton
 Date: March 2018
 """
@@ -56,7 +55,8 @@ def listdir(directory):
     :param directory: A path to some directory
     :return: An iterator yielding full paths to all files in the specified directory
     """
-    return list(map(lambda d: os.path.join(directory, d), os.listdir(directory)))
+    return map(lambda d: os.path.join(directory, d), os.listdir(directory))
+
 
 def mkdir(directory):
     """

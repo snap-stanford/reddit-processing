@@ -6,7 +6,8 @@ Author: Jon Deaton
 
 """
 
-import log, argparse
+import log
+import argparse
 import multiprocessing as mp
 import pandas as pd
 from reddit import *

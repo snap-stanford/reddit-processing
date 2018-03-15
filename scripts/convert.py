@@ -10,15 +10,21 @@ Date: February, 2018
 
 import os
 import csv
-import logging, argparse
+import log
+import argparse
 import multiprocessing as mp
 
-logging.basicConfig(format='[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+from reddit import *
 
 
 def convert_csv_to_tsv(csv_in, tsv_out):
+    """
+    Converts a file from CSV to TSV
+
+    :param csv_in: Path to the CSV file to convert
+    :param tsv_out: Path to write the TSV to
+    :return: None
+    """
     logger.info("Converting: %s ..." % os.path.split(csv_in)[1])
     with open(csv_in, 'r') as fin:
         with open(tsv_out, 'w') as fout:
@@ -27,10 +33,16 @@ def convert_csv_to_tsv(csv_in, tsv_out):
 
 
 def convert_csv_to_tsv_unpack(args):
+    # unpack arguments to convert_csv_to_tsv
     convert_csv_to_tsv(*args)
 
 
 def parse_args():
+    """
+    Parse the command line options for this file
+
+    :return: An argparse object containing parsed arguments
+    """
     parser = argparse.ArgumentParser(description="CSV to TSV converter", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     io_options_group = parser.add_argument_group("I/O Options")
@@ -48,57 +60,11 @@ def parse_args():
     return parser.parse_args()
 
 
-def init_logger(args):
-    """
-    Initializes a global logger
-    :param args: An argparse parsed-arguments object containing "verbose", "debug", and "log"
-    attributes used to set the settings of the logger
-    :return: None
-    """
-    if args.log == 'None':  # No --log flag
-        log_file = None
-    elif not args.log:  # Flag but no argument
-        log_file = os.path.join("log", os.path.splitext(os.path.basename(__file__))[0] + '_log.txt')
-    else:  # flag with argument
-        log_file = args.log
-
-    if log_file:  # Logging file was specified
-        log_file_dir = os.path.split(log_file)[0]
-        if log_file_dir and not os.path.exists(log_file_dir):
-            os.mkdir(log_file_dir)
-
-        if os.path.isfile(log_file):
-            open(log_file, 'w').close()
-
-    if args.debug:
-        log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-    elif args.verbose:
-        log_formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(funcName)s] - %(message)s')
-    else:
-        log_formatter = logging.Formatter('[log][%(levelname)s] - %(message)s')
-
-    global logger
-    logger = logging.getLogger('root')
-    if log_file:
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(log_formatter)
-        logger.addHandler(file_handler)
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(log_formatter)
-    logger.addHandler(console_handler)
-
-    if args.debug:
-        level = logging.DEBUG
-    elif args.verbose:
-        level = logging.INFO
-    else:
-        level = logging.WARNING
-    logger.setLevel(level)
-
-
 def main():
     args = parse_args()
-    init_logger(args)
+
+    global logger
+    logger = log.init_logger(args)
 
     logger.debug("Input directory: %s" % args.input)
     if not os.path.exists(args.input):
@@ -111,14 +77,15 @@ def main():
     else:
         logger.debug("Output directory: %s" % args.output)
 
-    input_csvs = [file for file in os.listdir(args.input) if file.endswith(".csv")]
+    input_dir = os.path.expanduser(args.input)
+    output_dir = os.path.expanduser(args.output)
+
+    input_csvs = [file for file in listdir(input_dir) if file.endswith(".csv")]
+
     output_csvs = ["%s.tsv" % os.path.splitext(file)[0] for file in input_csvs]
+    output_csvs = map(lambda p: os.path.join(output_dir, p), output_csvs)
 
-    input_csvs = map(lambda p: os.path.join(args.input, p), input_csvs)
-    output_csvs = map(lambda p: os.path.join(args.output, p), output_csvs)
-
-    num_files = len(input_csvs)
-
+    num_files = len(list(input_csvs))
     if input_csvs:
         logger.info("Found %d CSVs to convert" % num_files)
     else:
