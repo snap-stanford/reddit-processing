@@ -82,7 +82,7 @@ def main():
 
     input_csvs = [file for file in listdir(input_dir) if file.endswith(".csv")]
 
-    output_csvs = ["%s.tsv" % os.path.splitext(file)[0] for file in input_csvs]
+    output_csvs = ["%s.tsv" % os.path.splitext(file)[0] for file in output_dir]
     output_csvs = map(lambda p: os.path.join(output_dir, p), output_csvs)
 
     num_files = len(list(input_csvs))
