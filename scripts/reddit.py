@@ -38,13 +38,14 @@ def get_data_type(directory):
     :param directory: Path to some reddit sub-directory
     :return: The type of data stored in that directory
     """
-    if "user" in directory: return DataType.users
-    if "vote" in directory: return DataType.votes
-    if "comment" in directory: return DataType.comments
-    if "submission" in directory: return DataType.submissions
-    if "subscription" in directory: return DataType.subscriptions
-    if "removal" in directory: return DataType.removals
-    if "report" in directory: return DataType.reports
+    dir = os.path.split(directory)[1]
+    if "user" in dir: return DataType.users
+    if "vote" in dir: return DataType.votes
+    if "comment" in dir: return DataType.comments
+    if "submission" in dir: return DataType.submissions
+    if "subscription" in dir: return DataType.subscriptions
+    if "removal" in dir: return DataType.removals
+    if "report" in dir: return DataType.reports
     return DataType.unknown
 
 

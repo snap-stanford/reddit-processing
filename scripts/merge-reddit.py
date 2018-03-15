@@ -219,7 +219,6 @@ def rearrange_for_submission_join(df, data_type, event_type='event_type'):
         df[event_type] = 'submission'
         param_cols = ['sr_name', 'post_fullname', 'post_type', 'post_title', 'post_target_url', 'post_body']
 
-
     if data_type == DataType.removals:
         # endpoint_ts,user_id,sr_name,event_type,target_fullname,target_type,user_type
         # event_type is already present here
