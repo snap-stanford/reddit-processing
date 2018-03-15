@@ -98,7 +98,7 @@ def merge_data_subset(directory, output_directory, strategy):
     df = pd.concat(map(get_data_set_df, listdir(directory)))
     logger.debug("Finished aggregating: %s" % directory)
 
-    logger.debug("Sorting: " % directory)
+    logger.debug("Sorting: %s" % directory)
     if strategy == MergeType.user:
         df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
         final_columns = ['user_id', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
