@@ -109,7 +109,7 @@ def merge_data_subset(directory, output_directory, strategy):
 
     final_output = get_aggregate_file(output_directory, directory)
     logger.info("Writing output: %s" % final_output)
-    df.to_csv(final_output, index=False)
+    df.to_csv(final_output, index=False, sep="\t")
 
 
 def aggregate_dataframes(directory):
