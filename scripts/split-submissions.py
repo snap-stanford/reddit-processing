@@ -22,9 +22,10 @@ def load_dict_cache(directory):
     :return: A single dictionary made by loading and concatenating all of the dictionaries in
     the specified directory
     """
-    result = {}
-    map(lambda next_dict: result.update(next_dict), map(load_dict, listdir(directory)))
-    return result
+    d = {}
+    for file in listdir(directory):
+        d.update(load_dict(file))
+    return d
 
 
 def split_by_submission(reddit_directory, output_directory, num_splits, cache_dir="comment_maps"):
