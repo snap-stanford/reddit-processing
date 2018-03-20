@@ -3,6 +3,8 @@
 # and by submission
 # Author: Jon Deaton, March 2018
 
+set -e
+
 # Top level reddit directory
 REDDIT="/dfs/dataset/infolab/20180122-Reddit/data"
 
