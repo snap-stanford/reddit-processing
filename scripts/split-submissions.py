@@ -116,10 +116,11 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     df = pd.read_csv(table_file_path, engine='python')
 
     def get_base_submission(target_fullname):
-        if target_fullname not in comment_post_mapping:
-            logger.error("target_fullname: \"%s\" not in mapping!" % target_fullname)
-            return "MISSING"
-        return comment_post_mapping[target_fullname]
+        if target_fullname in comment_post_mapping:
+            return comment_post_mapping[target_fullname]
+        else:
+            return target_fullname
+
 
     logger.debug("Mapping column: %s" % table_file_name)
     df[result_col] = df[mapped_col].apply(get_base_submission)

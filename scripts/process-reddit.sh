@@ -27,9 +27,9 @@ COMMENT_CACHE="$SCRATCH/comment_map_cache"
 PYTHON=$(which python)
 
 # Split and merge by user
-$PYTHON ./split-users.py --input $REDDIT --output $USERS_SPLIT_DIR --debug --log "logs/split_user.log"
-$PYTHON ./merge-reddit.py --users --input $USERS_SPLIT_DIR --output $USERS_OUTPUT --debug --log "logs/merge_user.log"
+$PYTHON ./split-users.py --input $REDDIT --output $USERS_SPLIT_DIR --debug --log "$SCRATCH/log/split_user.log"
+$PYTHON ./merge-reddit.py --users --input $USERS_SPLIT_DIR --output $USERS_OUTPUT --debug --log "$SCRATCH/log/merge_user.log"
 
 # Split and merge by submission
-$PYTHON ./split-submissions.py --input $REDDIT --output $SUBMISSIONS_SPLIT_DIR --cache $COMMENT_CACHE --debug --log "logs/split_sub.log"
-$PYTHON ./merge-reddit.py --submissions --input $SUBMISSIONS_SPLIT_DIR --output $SUBMISSIONS_OUTPUT --debug --log "logs/merge_sub.log"
+$PYTHON ./split-submissions.py --input $REDDIT --output $SUBMISSIONS_SPLIT_DIR --cache $COMMENT_CACHE --debug --log "$SCRATCH/log/split_sub.log"
+$PYTHON ./merge-reddit.py --submissions --input $SUBMISSIONS_SPLIT_DIR --output $SUBMISSIONS_OUTPUT --debug --log "$SCRATCH/log/merge_sub.log"
