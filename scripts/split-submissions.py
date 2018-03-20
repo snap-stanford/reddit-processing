@@ -58,6 +58,7 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     logger.debug("Loading comment cache from: %s" % cache_dir)
     global comment_post_mapping  # stores map from comment fullname -> base submission id
     comment_post_mapping = load_dict_cache(cache_dir)
+    logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
 
     logger.info("Processing submission tables...")
     # Must first split up the submission data because
@@ -115,7 +116,10 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     df = pd.read_csv(table_file_path, engine='python')
 
     def get_base_submission(target_fullname):
-        return comment_post_mapping[target_fullname] if target_fullname in comment_post_mapping else target_fullname
+        if target_fullname not in comment_post_mapping:
+            logger.error("target_fullname: \"%s\" not in mapping!" % target_fullname)
+            return "MISSING"
+        return comment_post_mapping[target_fullname]
 
     logger.debug("Mapping column: %s" % table_file_name)
     df[result_col] = df[mapped_col].apply(get_base_submission)
@@ -229,4 +233,5 @@ def main():
     split_by_submission(input_directory, output_directory, args.num_splits,
                         cache_dir=args.cache)
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()
