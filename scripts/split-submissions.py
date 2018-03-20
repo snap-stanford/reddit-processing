@@ -191,7 +191,7 @@ def parse_args():
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")
-    options_group.add_argument('-p', '--pool-size', type=int, default=64,    help="Thread-pool size")
+    options_group.add_argument('-p', '--pool-size', type=int, default=32,    help="Thread-pool size")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
