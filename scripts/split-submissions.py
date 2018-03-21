@@ -12,20 +12,23 @@ import multiprocessing as mp
 import pandas as pd
 import os
 import psutil
-
 from reddit import *
 
 
-def load_dict_cache(directory):
+def load_dict_cache(directory, shared_memory=False):
     """
-    Loads dictionaries from files into one dict
+    Loads dictionaries from files into a dictionary
 
     Loads a collection of dictionaries stored in a set of files located in a directory
     :param directory: A directory containing the files of pickled dictionaries
+    :param shared_memory: Whether the dictionary should be loaded into a shared memory dictionary
     :return: A single dictionary made by loading and concatenating all of the dictionaries in
     the specified directory
     """
-    d = {}
+    if shared_memory:
+        d = mp.Manager().dict()
+    else:
+        d = {}
     for file in listdir(directory):
         d.update(load_dict(file))
     return d
@@ -60,7 +63,7 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
 
     logger.debug("Loading comment cache from: %s" % cache_dir)
     global comment_post_mapping  # stores map from comment fullname -> base submission id
-    comment_post_mapping = load_dict_cache(cache_dir)
+    comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
 
     logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
     logger.debug("Comment map size: %d MB " % sys.getsizeof(comment_post_mapping) / 1e6)
