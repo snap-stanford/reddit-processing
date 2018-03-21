@@ -13,6 +13,7 @@ import pickle
 from enum import Enum
 import logging
 import pandas as pd
+import psutil
 
 logger = logging.getLogger('root')
 
@@ -122,8 +123,11 @@ def split_file(on, file_path, targets, num_splits, map_columns=None, maps_dir=No
     file_name = os.path.split(file_path)[1]
     logger.debug("Reading: %s" % file_name)
     df = pd.read_csv(file_path, engine='python')
-    logger.debug("Splitting: %s" % file_name)
 
+    process = psutil.Process(os.getpid())
+    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
+
+    logger.debug("Splitting: %s" % file_name)
     file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
     split_data_frame(df, on, lambda x: hash(x) % num_splits, file_targets)
     if map_columns and maps_dir is None:

@@ -5,10 +5,13 @@ File: split-submissions.py
 Author: Jon Deaton
 Date: March, 2018
 """
-
-import log, argparse
+import sys
+import log
+import argparse
 import multiprocessing as mp
 import pandas as pd
+import os
+import psutil
 
 from reddit import *
 
@@ -58,7 +61,11 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     logger.debug("Loading comment cache from: %s" % cache_dir)
     global comment_post_mapping  # stores map from comment fullname -> base submission id
     comment_post_mapping = load_dict_cache(cache_dir)
+
     logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
+    logger.debug("Comment map size: %d MB " % sys.getsizeof(comment_post_mapping) / 1e6)
+    process = psutil.Process(os.getpid())
+    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
     logger.info("Processing submission tables...")
     # Must first split up the submission data because
@@ -87,6 +94,10 @@ def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits):
         for table_fname in table_files
     ]
 
+    process = psutil.Process(os.getpid())
+    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
+
+    logger.debug("PID: %d, forking..." % process.pid)
     pool = mp.Pool(pool_size)
     pool.map(unpack_mapped_split_core, args_list)
 
@@ -115,12 +126,14 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     logger.debug("Reading: %s" % table_file_name)
     df = pd.read_csv(table_file_path, engine='python')
 
+    process = psutil.Process(os.getpid())
+    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
+
     def get_base_submission(target_fullname):
         if target_fullname in comment_post_mapping:
             return comment_post_mapping[target_fullname]
         else:
             return target_fullname
-
 
     logger.debug("Mapping column: %s" % table_file_name)
     df[result_col] = df[mapped_col].apply(get_base_submission)
@@ -150,6 +163,11 @@ def split_data_set(reddit_path, data_set_name, on, num_splits, output_directory,
     full_sub_data_path = os.path.join(reddit_path, data_set_name)
     data_files = map(lambda f: os.path.join(full_sub_data_path, f), os.listdir(full_sub_data_path))
     args_list = [(on, table_file, targets, num_splits, map_columns, maps_dir) for table_file in data_files]
+
+    process = psutil.Process(os.getpid())
+    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
+
+    logger.debug("PID: %d, forking..." % process.pid)
     pool = mp.Pool(pool_size)
     pool.map(unpack_split_file, args_list)
 
@@ -233,6 +251,7 @@ def main():
 
     split_by_submission(input_directory, output_directory, args.num_splits,
                         cache_dir=args.cache)
+
 
 if __name__ == "__main__":
     main()
