@@ -15,7 +15,12 @@ import psutil
 from reddit import *
 
 
-def load_dict_cache(directory, shared_memory=False):
+def load_dict_shared_memory(args):
+    fname, d_shm = args
+    d_shm.update(load_dict(fname))
+
+
+def load_dict_cache(directory, manager, shared_memory=False):
     """
     Loads dictionaries from files into a dictionary
 
@@ -27,18 +32,24 @@ def load_dict_cache(directory, shared_memory=False):
     """
     d = mp.Manager().dict() if shared_memory else {}
 
-    try:
-        import progressbar
-        bar = progressbar.ProgressBar()
-        for file in bar(listdir(directory)):
-            d.update(load_dict(file))
-    except ImportError:
-        dict_files = listdir(directory)
-        num_dicts = len(dict_files)
-        for i, file in enumerate(dict_files):
-            d.update(load_dict(file))
-            if i and i % 10 == 1:
-                logger.debug("Loaded %d / %d" % (i, num_dicts))
+    manager = mp.Manager()
+    d = manager.dict()
+    pool = mp.Pool(pool_size)
+    pool.map(load_dict_shared_memory, [(file, d) for file in listdir(directory)])
+
+    # try:
+    #     import progressbar  # try to use a nice progressbar if you can...
+    #     bar = progressbar.ProgressBar()
+    #     for file in bar(list(listdir(directory))):
+    #         d.update(load_dict(file))
+    # except ImportError:
+    #     dict_files = listdir(directory)
+    #     num_dicts = len(dict_files)
+    #     for i, file in enumerate(dict_files):
+    #         d.update(load_dict(file))
+    #         if i and i % 10 == 1:
+    #             logger.debug("Loaded %d / %d" % (i, num_dicts))
+
     return d
 
 
@@ -72,9 +83,8 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     logger.debug("Loading comment cache from: %s" % cache_dir)
     global comment_post_mapping  # stores map from comment fullname -> base submission id
     comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
-
     logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
-    logger.debug("Comment map size: %d MB " % sys.getsizeof(comment_post_mapping) / 1e6)
+
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
