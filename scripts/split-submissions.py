@@ -18,9 +18,10 @@ from reddit import *
 def load_dict_shared_memory(args):
     fname, d_shm = args
     d_shm.update(load_dict(fname))
+    logger.debug("Loaded: %s" % os.path.split(fname)[1])
 
 
-def load_dict_cache(directory, manager, shared_memory=False):
+def load_dict_cache(directory, shared_memory=False):
     """
     Loads dictionaries from files into a dictionary
 
