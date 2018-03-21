@@ -25,12 +25,20 @@ def load_dict_cache(directory, shared_memory=False):
     :return: A single dictionary made by loading and concatenating all of the dictionaries in
     the specified directory
     """
-    if shared_memory:
-        d = mp.Manager().dict()
-    else:
-        d = {}
-    for file in listdir(directory):
-        d.update(load_dict(file))
+    d = mp.Manager().dict() if shared_memory else {}
+
+    try:
+        import progressbar
+        bar = progressbar.ProgressBar()
+        for file in bar(listdir(directory)):
+            d.update(load_dict(file))
+    except ImportError:
+        dict_files = listdir(directory)
+        num_dicts = len(dict_files)
+        for i, file in enumerate(dict_files):
+            d.update(load_dict(file))
+            if i and i % 10 == 1:
+                logger.debug("Loaded %d / %d" % (i, num_dicts))
     return d
 
 
