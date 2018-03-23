@@ -74,7 +74,7 @@ def mkdir(directory):
     """
     try:
         os.mkdir(directory)
-    except FileExistsError:
+    except:
         pass
     # os.makedirs(directory, exist_ok=True)
 
