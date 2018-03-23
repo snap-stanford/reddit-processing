@@ -126,7 +126,7 @@ def split_file(on, file_path, targets, num_splits, map_columns=None, maps_dir=No
     """
     file_name = os.path.split(file_path)[1]
     logger.debug("Reading: %s" % file_name)
-    df = pd.read_csv(file_path, engine='python')
+    df = pd.read_csv(file_path)
 
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
