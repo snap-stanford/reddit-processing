@@ -14,12 +14,21 @@ import os
 import psutil
 from reddit import *
 
+import libdict
+
 
 def load_dict_shared_memory(args):
     fname, d_shm = args
     d_shm.update(load_dict(fname))
     logger.debug("Loaded: %s" % os.path.split(fname)[1])
 
+
+def load_dict_cpp(directory):
+    import progressbar  # try to use a nice progressbar if you can...
+    bar = progressbar.ProgressBar()
+    for file in bar(list(listdir(directory))):
+        for key, value in load_dict(file).items():
+            libdict.insert(key, value)
 
 def load_dict_cache(directory, shared_memory=False):
     """
@@ -33,24 +42,24 @@ def load_dict_cache(directory, shared_memory=False):
     """
     d = mp.Manager().dict() if shared_memory else {}
 
-    manager = mp.Manager()
-    d = manager.dict()
-    pool = mp.Pool(pool_size)
-    pool.map(load_dict_shared_memory, [(file, d) for file in listdir(directory)])
-
-    # try:
-    #     import progressbar  # try to use a nice progressbar if you can...
-    #     bar = progressbar.ProgressBar()
-    #     for file in bar(list(listdir(directory))):
-    #         d.update(load_dict(file))
-    # except ImportError:
-    #     dict_files = listdir(directory)
-    #     num_dicts = len(dict_files)
-    #     for i, file in enumerate(dict_files):
-    #         d.update(load_dict(file))
-    #         if i and i % 10 == 1:
-    #             logger.debug("Loaded %d / %d" % (i, num_dicts))
-
+    if shared_memory:
+        manager = mp.Manager()
+        d = manager.dict()  # Make a shared memory dictionaru
+        pool = mp.Pool(pool_size)
+        pool.map(load_dict_shared_memory, [(file, d) for file in listdir(directory)])
+    else:
+        try:
+            import progressbar  # try to use a nice progressbar if you can...
+            bar = progressbar.ProgressBar()
+            for file in bar(list(listdir(directory))):
+                d.update(load_dict(file))
+        except ImportError:
+            dict_files = listdir(directory)
+            num_dicts = len(dict_files)
+            for i, file in enumerate(dict_files):
+                d.update(load_dict(file))
+                if i and i % 10 == 1:
+                    logger.debug("Loaded %d / %d" % (i, num_dicts))
     return d
 
 
@@ -82,9 +91,12 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
                        map_columns=("comment_fullname", "post_fullname"))
 
     logger.debug("Loading comment cache from: %s" % cache_dir)
-    global comment_post_mapping  # stores map from comment fullname -> base submission id
-    comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
-    logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
+    # global comment_post_mapping  # stores map from comment fullname -> base submission id
+    # comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
+    # logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
+
+    load_dict_cpp(cache_dir)
+    logger.info("Loaded comment cache into C++ map")
 
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
@@ -157,8 +169,14 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
         else:
             return target_fullname
 
+    def get_base_from_cpp(target_fullname):
+        if libdict.contains(target_fullname) == "True":
+            return libdict.get_value(target_fullname)
+        return target_fullname
+
     logger.debug("Mapping column: %s" % table_file_name)
-    df[result_col] = df[mapped_col].apply(get_base_submission)
+    # df[result_col] = df[mapped_col].apply(get_base_submission)  # The vanilla version
+    df[result_col] = df[mapped_col].apply(get_base_from_cpp)  # the CPP version
     df[result_col].fillna("missing", inplace=True)
 
     # Make a map of output files for each of the splits as well as creating the
