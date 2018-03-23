@@ -107,7 +107,7 @@ def load_dict(fname):
     :param fname: Path to a file containing the serialized dictionary
     :return: The dictionary that was stored in the file
     """
-    return pickle.load(open(fname, 'rb'))
+    return pickle.load(open(fname, 'rb'), encoding='latin1')
 
 
 def split_file(on, file_path, targets, num_splits, map_columns=None, maps_dir=None):
