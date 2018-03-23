@@ -72,7 +72,11 @@ def mkdir(directory):
     :param directory: A path to a directory to create
     :return: None
     """
-    os.makedirs(directory, exist_ok=True)
+    try:
+        os.mkdir(directory)
+    except FileExistsError:
+        pass
+    # os.makedirs(directory, exist_ok=True)
 
 
 def hash(s):
