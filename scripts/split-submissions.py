@@ -14,7 +14,7 @@ import os
 import psutil
 from reddit import *
 
-import libdict
+from hashmap import HashMap
 
 
 def load_dict_shared_memory(args):
@@ -24,7 +24,7 @@ def load_dict_shared_memory(args):
 
 
 def load_dict_cpp(directory):
-    import progressbar  # try to use a nice progressbar if you can...
+    import progressbar
     bar = progressbar.ProgressBar()
     for file in bar(list(listdir(directory))):
         for key, value in load_dict(file).items():
@@ -43,8 +43,10 @@ def load_dict_cache(directory, shared_memory=False):
     d = mp.Manager().dict() if shared_memory else {}
 
     if shared_memory:
-        manager = mp.Manager()
-        d = manager.dict()  # Make a shared memory dictionaru
+        # manager = mp.Manager()
+        # d = manager.dict()  # Make a shared memory dictionary
+        d = HashMap()
+
         pool = mp.Pool(pool_size)
         pool.map(load_dict_shared_memory, [(file, d) for file in listdir(directory)])
     else:
