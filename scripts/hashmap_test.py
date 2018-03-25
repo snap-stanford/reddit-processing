@@ -218,15 +218,6 @@ def performance_test():
     from itertools import permutations
 
     def test_dict(d):
-        # d[-1] = 1
-        # d[-2] = 2
-        # for i in range(10000):
-        #     d[i] = (2 * d[i - 1] + d[i - 2]) % 123454321
-        #
-        # s = 0
-        # for i in range(10000):
-        #     if d[i] % 2071 == 0:
-        #         s += d[i]
         for p in [''.join(p) for p in permutations('1234567')]:
             d[p.encode()] = p.encode()
 
@@ -272,7 +263,6 @@ def performance_test():
     print("dbm lookup time: %s" % (time.time() - t))
 
     db.close()
-
 
 
 if __name__ == "__main__":
