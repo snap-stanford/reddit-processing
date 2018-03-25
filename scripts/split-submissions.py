@@ -23,7 +23,9 @@ def load_it_unpack(args):
     load_it(*args)
 
 def load_it(fd, fname):
+    logger.debug("Reading: %s" % os.path.split(fname)[1])
     d = load_dict(fname)
+    logger.debug("Loading into shared memory: %s" % os.path.split(fname)[1])
     with lock:
         for key, value in d.items():
             shmht.setval(fd, key, value)
@@ -105,7 +107,7 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     # comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
     # logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
 
-    fd = shmht.open(os.path.join(output_directory, "shmht",) ,2000000000, 1)
+    fd = shmht.open(os.path.join(output_directory, "shmht"), 2000000000, 1)
     load_shmht(cache_dir, fd)
     logger.info("Loaded comment cache into shared memory hash table")
 
