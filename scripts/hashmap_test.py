@@ -227,14 +227,22 @@ def performance_test():
         # for i in range(10000):
         #     if d[i] % 2071 == 0:
         #         s += d[i]
-        for p in [''.join(p) for p in permutations('abcdefghij')]:
+        for p in [''.join(p) for p in permutations('12345')]:
             d[p.encode()] = p.encode()
 
+    def test_lookup(d):
+        for p in [''.join(p) for p in permutations('12345')]:
+            if p.encode() in d:
+                pass
 
-    td = time.time()
-    test_dict({})
-    td = time.time() - td
-    print("dict: %s" % td)
+    d = {}
+    t = time.time()
+    test_dict(d)
+    print("dict insert: %s" % (time.time() - t))
+
+    t = time.time()
+    test_lookup(d)
+    print("dict lookup: %s" % (time.time() - t))
 
     # thm = time.time()
     # test_dict(HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000))
@@ -247,11 +255,16 @@ def performance_test():
     # print("Manager().dict: %s" % thman)
 
     db = dbm.open('cache', 'c')
-    tdbm = time.time()
+    t = time.time()
     test_dict(db)
-    tdbm = time.time() - tdbm
+    print("dbm insert time: %s" % (time.time() - t))
+
+    t = time.time()
+    test_lookup(db)
+    print("dbm lookup time: %s" % (time.time() - t))
+
     db.close()
-    print("dbm time: %s" % tdbm)
+
 
 
 if __name__ == "__main__":
