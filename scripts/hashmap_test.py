@@ -236,15 +236,15 @@ def performance_test():
     td = time.time() - td
     print("dict: %s" % td)
 
-    thm = time.time()
-    test_dict(HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000))
-    thm = time.time() - thm
-    print("Shared-Memory HashMap: %s" % thm)
-
-    thman = time.time()
-    test_dict(mp.Manager().dict())
-    thman = time.time() - thman
-    print("Manager().dict: %s" % thman)
+    # thm = time.time()
+    # test_dict(HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000))
+    # thm = time.time() - thm
+    # print("Shared-Memory HashMap: %s" % thm)
+    #
+    # thman = time.time()
+    # test_dict(mp.Manager().dict())
+    # thman = time.time() - thman
+    # print("Manager().dict: %s" % thman)
 
     db = dbm.open('cache', 'c')
     tdbm = time.time()
