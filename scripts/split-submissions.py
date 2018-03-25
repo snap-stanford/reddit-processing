@@ -22,11 +22,12 @@ lock = mp.Lock()
 def load_it_unpack(args):
     load_it(*args)
 
-def load_it(fd, file):
-    d = load_dict(file)
+def load_it(fd, fname):
+    d = load_dict(fname)
     with lock:
         for key, value in d.items():
             shmht.setval(fd, key, value)
+    logger.debug("Loaded: %s" % os.path.split(fname)[1])
 
 def load_shmht(directory, fd):
     pool = mp.Pool(pool_size)
@@ -104,7 +105,7 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     # comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
     # logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
 
-    fd = shmht.open(os.path.join(output_directory, "shmht",), 2000000000, 1)
+    fd = shmht.open(os.path.join(output_directory, "shmht",) ,2000000000, 1)
     load_shmht(cache_dir, fd)
     logger.info("Loaded comment cache into shared memory hash table")
 
