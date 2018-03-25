@@ -227,11 +227,11 @@ def performance_test():
         # for i in range(10000):
         #     if d[i] % 2071 == 0:
         #         s += d[i]
-        for p in [''.join(p) for p in permutations('12345')]:
+        for p in [''.join(p) for p in permutations('1234567')]:
             d[p.encode()] = p.encode()
 
     def test_lookup(d):
-        for p in [''.join(p) for p in permutations('12345')]:
+        for p in [''.join(p) for p in permutations('1234567')]:
             if p.encode() in d:
                 pass
 
