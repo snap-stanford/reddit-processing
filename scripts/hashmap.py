@@ -32,8 +32,10 @@ class HashMap(object):
         self.key_type = key_type
         self.value_type = value_type
         self.capacity = capacity if not key_value_pairs or capacity >= len(key_value_pairs) else 2 * capacity
-        self.lock = lock
+        self.lock = lock if lock else contextlib.suppress()
         self.arr = mp.Array(self.KV_type, self.capacity)
+        self.size = mp.Value('i', 0)
+
         self.clear()
         self.insert(key_value_pairs)
 
@@ -51,13 +53,14 @@ class HashMap(object):
             yield key, self.arr[key]
 
     def clear(self):
-        for i in range(self.capacity):
-            self.arr[i].origin = -1
-        self.size = 0
+        with self.lock:
+            for i in range(self.capacity):
+                self.arr[i].origin = -1
+            self.size.value = 0
 
     def __iter__(self):
         seen = 0
-        og_size = self.size
+        og_size = self.size.value
         for i in range(self.capacity):
             if self.arr[i].origin >= 0:
                 next = self.arr[i].key
@@ -74,7 +77,7 @@ class HashMap(object):
                     break
 
     def __len__(self):
-        return self.size
+        return self.size.value
 
     def __contains__(self, key):
         i = self._get_bucket(key)
@@ -88,7 +91,7 @@ class HashMap(object):
             raise KeyError(key)
 
     def __setitem__(self, key, value):
-        with self.lock if self.lock else contextlib.suppress():
+        with self.lock:
             start = hash(key) % self.capacity
             i = start
             while self.arr[i].origin >= 0:
@@ -102,10 +105,10 @@ class HashMap(object):
             self.arr[i].key = key
             self.arr[i].value = value
             self.arr[i].origin = start
-            self.size += 1
+            self.size.value += 1
 
     def __delitem__(self, key):
-        with self.lock if self.lock else contextlib.suppress():
+        with self.lock:
             i = self._get_bucket(key)
             if i < 0:
                 raise KeyError(key)
@@ -140,7 +143,7 @@ class HashMap(object):
             self._replace(last, stop=i)
         else:
             self._delete(i)
-            self.size -= 1
+            self.size.value -= 1
 
     def _move(self, source, sink):
         self.arr[source] = self.arr[sink]

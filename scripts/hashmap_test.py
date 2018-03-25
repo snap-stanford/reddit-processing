@@ -189,15 +189,13 @@ class HashMapTest(unittest.TestCase):
         self.assertTrue(b'B' not in d)
 
     def test_multiprocessing_update(self):
-        d = HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, lock=mp.Lock())
+        d = HashMap(key_type=ctypes.c_int, value_type=ctypes.c_int, lock=mp.Lock())
 
         def update_1():
-            d.update(upper_to_lower)
-            print("updated 1! length: %s" % len(d))
+            d.update({1: 1, 11: 11, 111: 111})
 
         def update_2():
-            d.update(lower_to_upper)
-            print("updated 2! length: %s" % len(d))
+            d.update({2: 2, 22: 22, 222: 222})
 
         p1 = mp.Process(target=update_1)
         p2 = mp.Process(target=update_2)
@@ -206,14 +204,14 @@ class HashMapTest(unittest.TestCase):
         p1.join()
         p2.join()
 
-        d.update(upper_to_lower)
-        d.update(lower_to_upper)
+        for n in [1, 11, 111]:
+            self.assertTrue(n in d)
 
-        for ll in lowercase:
-            self.assertTrue(ll in d)
+        for n in [2, 22, 222]:
+            self.assertTrue(n in d)
 
-        for ul in uppercase:
-            self.assertTrue(ul in d)
+        self.assertEqual(len(d), 6)
+
 
 def performance_test():
     def test_dict(d):
