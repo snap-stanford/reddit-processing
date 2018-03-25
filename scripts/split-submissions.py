@@ -18,18 +18,18 @@ import shmht  # shared memory hash table
 
 lock = mp.Lock()
 
-
 def load_it_unpack(args):
     load_it(*args)
 
 def load_it(fd, fname):
     logger.debug("Reading: %s" % os.path.split(fname)[1])
     d = load_dict(fname)
+    lock.acquire()
     logger.debug("Loading into shared memory: %s" % os.path.split(fname)[1])
-    with lock:
-        for key, value in d.items():
-            shmht.setval(fd, key, value)
+    for key, value in d.items():
+        shmht.setval(fd, key, value)
     logger.debug("Loaded: %s" % os.path.split(fname)[1])
+    lock.release()
 
 def load_shmht(directory, fd):
     pool = mp.Pool(pool_size)
