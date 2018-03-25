@@ -2,7 +2,6 @@
 import unittest
 import string
 import ctypes
-import time
 from hashmap import HashMap
 import multiprocessing as mp
 
@@ -214,27 +213,27 @@ class HashMapTest(unittest.TestCase):
 
 
 def performance_test():
+    import time
+    import dbm
     def test_dict(d):
         d[-1] = 1
         d[-2] = 2
-        for i in range(100000):
+        for i in range(10000):
             d[i] = (2 * d[i - 1] + d[i - 2]) % 123454321
 
         s = 0
-        for i in range(100000):
+        for i in range(10000):
             if d[i] % 2071 == 0:
                 s += d[i]
 
     td = time.time()
     test_dict({})
     td = time.time() - td
-
     print("dict: %s" % td)
 
     thm = time.time()
     test_dict(HashMap(key_type=ctypes.c_int, value_type=ctypes.c_int, capacity=1000000))
     thm = time.time() - thm
-
     print("Shared-Memory HashMap: %s" % thm)
 
     thman = time.time()
@@ -242,7 +241,14 @@ def performance_test():
     thman = time.time() - thman
     print("Manager().dict: %s" % thman)
 
+    db = dbm.open('cache', 'c')
+    tdbm = time.time()
+    test_dict(db)
+    tdbm = time.time() - tdbm
+    db.close()
+    print("dbm time: %s" % tdbm)
+
 
 if __name__ == "__main__":
-    # performance_test()
+    performance_test()
     unittest.main()
