@@ -244,15 +244,23 @@ def performance_test():
     test_lookup(d)
     print("dict lookup: %s" % (time.time() - t))
 
-    # thm = time.time()
-    # test_dict(HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000))
-    # thm = time.time() - thm
-    # print("Shared-Memory HashMap: %s" % thm)
-    #
-    # thman = time.time()
-    # test_dict(mp.Manager().dict())
-    # thman = time.time() - thman
-    # print("Manager().dict: %s" % thman)
+    d = HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000)
+    t = time.time()
+    test_dict(d)
+    print("Shared-Memory HashMap insert: %s" % (time.time() - t))
+
+    t = time.time()
+    test_lookup(d)
+    print("Shared-Memory HashMap lookup: %s" % (time.time() - t))
+
+    d = mp.Manager().dict()
+    t = time.time()
+    test_dict(d)
+    print("Manager().dict insert: %s" % (time.time() - t))
+
+    t = time.time()
+    test_lookup(d)
+    print("Manager().dict lookup: %s" % (time.time() - t))
 
     db = dbm.open('cache', 'c')
     t = time.time()
