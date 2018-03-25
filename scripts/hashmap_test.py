@@ -227,7 +227,7 @@ def performance_test():
         # for i in range(10000):
         #     if d[i] % 2071 == 0:
         #         s += d[i]
-        for p in [''.join(p) for p in permutations('stackyy')]:
+        for p in [''.join(p) for p in permutations('abcdefghij')]:
             d[p.encode()] = p.encode()
 
 
