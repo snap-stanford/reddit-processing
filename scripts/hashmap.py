@@ -11,8 +11,12 @@ import multiprocessing as mp
 import ctypes
 import contextlib
 
-class HashMap:
-    def __init__(self, key_value_pairs=None, key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=100000, lock=False):
+__author__ = "Jon Deaton"
+
+
+class HashMap(object):
+    def __init__(self, key_value_pairs=None,
+                 key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000, lock=False):
         class KeyValue(ctypes.Structure):
             _fields_ = [
                 ('key', key_type),
@@ -20,44 +24,65 @@ class HashMap:
                 ('origin', ctypes.c_int)
             ]
 
+            def __init__(self):
+                super(KeyValue, self).__init__()
+                self.origin = -1
+
         self.KV_type = KeyValue
         self.key_type = key_type
         self.value_type = value_type
         self.capacity = capacity if not key_value_pairs or capacity >= len(key_value_pairs) else 2 * capacity
         self.lock = lock
-        self.arr = mp.Array(self.KV_type, self.capacity, lock=lock)
-        self.size = 0
+        self.arr = mp.Array(self.KV_type, self.capacity)
+        self.clear()
         self.insert(key_value_pairs)
 
     def insert(self, key_value_pairs):
-        if not key_value_pairs: return
+        if key_value_pairs is None:
+            return
         for key, value in key_value_pairs:
             self[key] = value
 
     def update(self, d):
-        if not d:
-            return
         self.insert(d.items())
 
     def items(self):
         for key in self:
             yield key, self.arr[key]
 
-    def __iter__(self):
+    def clear(self):
         for i in range(self.capacity):
-            if self.arr[i].key:
-                yield self.arr[i].key
+            self.arr[i].origin = -1
+        self.size = 0
+
+    def __iter__(self):
+        seen = 0
+        og_size = self.size
+        for i in range(self.capacity):
+            if self.arr[i].origin >= 0:
+                next = self.arr[i].key
+                yield next
+                seen += 1
+
+                # In case this element gets deleted after yielding
+                while self.arr[i].origin >= 0 and next != self.arr[i].key:
+                    next = self.arr[i].key
+                    yield self.arr[i].key
+                    seen += 1
+
+                if seen == og_size:
+                    break
 
     def __len__(self):
         return self.size
 
     def __contains__(self, key):
         i = self._get_bucket(key)
-        return i is not None
+        return i >= 0
 
     def __getitem__(self, key):
         i = self._get_bucket(key)
-        if i is not None:
+        if i >= 0:
             return self.arr[i].value
         else:
             raise KeyError(key)
@@ -66,7 +91,7 @@ class HashMap:
         with self.lock if self.lock else contextlib.suppress():
             start = hash(key) % self.capacity
             i = start
-            while self.arr[i].key:
+            while self.arr[i].origin >= 0:
                 if self.arr[i].key == key:
                     self.arr[i].value = value
                     return
@@ -74,7 +99,6 @@ class HashMap:
                     i = self._next_index(i)
                     if i == start:  # came back around to the beginning
                         raise MemoryError
-
             self.arr[i].key = key
             self.arr[i].value = value
             self.arr[i].origin = start
@@ -83,7 +107,7 @@ class HashMap:
     def __delitem__(self, key):
         with self.lock if self.lock else contextlib.suppress():
             i = self._get_bucket(key)
-            if i is None:
+            if i < 0:
                 raise KeyError(key)
             self._replace(i)
 
@@ -93,19 +117,19 @@ class HashMap:
     def _get_bucket(self, key):
         start = hash(key) % self.capacity
         i = start
-        while self.arr[i].key:
+        while self.arr[i].origin >= 0:
             if self.arr[i].key == key:
                 return i
             else:
                 i = self._next_index(i)
                 if i == start:
-                    return None
-        return None
+                    return -1
+        return -1
 
     def _replace(self, i, stop=None):
         j = i
         last = i
-        while self.arr[j].key:
+        while self.arr[j].origin >= 0:
             if self.arr[j].origin <= self.arr[i].origin:  # found a replacement
                 last = j
             j = self._next_index(j)
@@ -113,14 +137,14 @@ class HashMap:
                 break
         if last != i and last != stop:
             self.arr[i] = self.arr[last]
-            self._replace(last)
+            self._replace(last, stop=i)
         else:
             self._delete(i)
+            self.size -= 1
 
     def _move(self, source, sink):
         self.arr[source] = self.arr[sink]
         self._delete(source)
 
     def _delete(self, i):
-        self.arr[i].key = None
-        self.arr[i].value = None
+        self.arr[i].origin = -1

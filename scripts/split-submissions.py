@@ -14,21 +14,29 @@ import os
 import psutil
 from reddit import *
 
-from hashmap import HashMap
+import shmht  # shared memory hash table
+
+lock = mp.Lock()
+
+
+def load_it_unpack(args):
+    load_it(*args)
+
+def load_it(fd, file):
+    d = load_dict(file)
+    with lock:
+        for key, value in d.items():
+            shmht.setval(fd, key, value)
+
+def load_shmht(directory, fd):
+    pool = mp.Pool(pool_size)
+    pool.map(load_it_unpack, [(fd, file) for file in listdir(directory)])
 
 
 def load_dict_shared_memory(args):
     fname, d_shm = args
     d_shm.update(load_dict(fname))
     logger.debug("Loaded: %s" % os.path.split(fname)[1])
-
-
-def load_dict_cpp(directory):
-    import progressbar
-    bar = progressbar.ProgressBar()
-    for file in bar(list(listdir(directory))):
-        for key, value in load_dict(file).items():
-            libdict.insert(key, value)
 
 def load_dict_cache(directory, shared_memory=False):
     """
@@ -45,7 +53,6 @@ def load_dict_cache(directory, shared_memory=False):
     if shared_memory:
         # manager = mp.Manager()
         # d = manager.dict()  # Make a shared memory dictionary
-        d = HashMap()
 
         pool = mp.Pool(pool_size)
         pool.map(load_dict_shared_memory, [(file, d) for file in listdir(directory)])
@@ -97,8 +104,9 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     # comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
     # logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
 
-    load_dict_cpp(cache_dir)
-    logger.info("Loaded comment cache into C++ map")
+    fd = shmht.open(os.path.join(output_directory, "shmht",), 2000000000, 1)
+    load_shmht(cache_dir, fd)
+    logger.info("Loaded comment cache into shared memory hash table")
 
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
@@ -111,6 +119,7 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     for data_set_name in ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]:
         mapped_split(reddit_directory, data_set_name, 'target_fullname', 'post_fullname', num_splits)
 
+    shmht.close(fd)
 
 def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits):
     """
