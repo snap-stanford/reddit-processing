@@ -215,16 +215,21 @@ class HashMapTest(unittest.TestCase):
 def performance_test():
     import time
     import dbm
-    def test_dict(d):
-        d[-1] = 1
-        d[-2] = 2
-        for i in range(10000):
-            d[i] = (2 * d[i - 1] + d[i - 2]) % 123454321
+    from itertools import permutations
 
-        s = 0
-        for i in range(10000):
-            if d[i] % 2071 == 0:
-                s += d[i]
+    def test_dict(d):
+        # d[-1] = 1
+        # d[-2] = 2
+        # for i in range(10000):
+        #     d[i] = (2 * d[i - 1] + d[i - 2]) % 123454321
+        #
+        # s = 0
+        # for i in range(10000):
+        #     if d[i] % 2071 == 0:
+        #         s += d[i]
+        for p in [''.join(p) for p in permutations('stackyy')]:
+            d[p.encode()] = p.encode()
+
 
     td = time.time()
     test_dict({})
@@ -232,7 +237,7 @@ def performance_test():
     print("dict: %s" % td)
 
     thm = time.time()
-    test_dict(HashMap(key_type=ctypes.c_int, value_type=ctypes.c_int, capacity=1000000))
+    test_dict(HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000))
     thm = time.time() - thm
     print("Shared-Memory HashMap: %s" % thm)
 
