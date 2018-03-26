@@ -4,22 +4,21 @@ from itertools import permutations
 import ctypes
 import multiprocessing as mp
 
-from hashmap import HashMap
-import dbm
+from hashmap import HashTable
+import gdbm
 import shmht
 import snap
 
+perm_set = '1234567'
 
 def test_dict_insert(d):
-    for p in [''.join(p) for p in permutations('1234567')]:
+    for p in [''.join(p) for p in permutations(perm_set)]:
         d[p.encode()] = p.encode()
 
-
 def test_dict_lookup(d):
-    for p in [''.join(p) for p in permutations('1234567')]:
+    for p in [''.join(p) for p in permutations(perm_set)]:
         if p.encode() in d:
             pass
-
 
 def performance_test():
     d = {}
@@ -58,7 +57,12 @@ def performance_test():
     test_dict_lookup(d)
     print("Manager().dict lookup: %s" % (time.time() - t))
 
-    db = dbm.open('cache', 'c')
+    fd = shmht.open("/lfs/madmax3/0/jdeaton/shmht_cache/cache"), 2000000000, 1)
+    t = time.time()
+
+
+
+    db = gdbm.open('/lfs/madmax3/0/jdeaton/dbm_cache/cache', 'c')
     t = time.time()
     test_dict_insert(db)
     print("dbm insert time: %s" % (time.time() - t))

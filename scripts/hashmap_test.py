@@ -2,7 +2,7 @@
 import unittest
 import string
 import ctypes
-from hashmap import HashMap
+from hashmap import HashTable
 import multiprocessing as mp
 
 uppercase = [l.encode() for l in string.ascii_uppercase]
@@ -16,7 +16,7 @@ lower_to_upper = {ll: ul for ll, ul in zip(lowercase, uppercase)}
 class HashMapTest(unittest.TestCase):
 
     def test_setting(self):
-        d = HashMap(capacity=4)
+        d = HashTable(capacity=4)
         d[b'a'] = b'A'
         d[b'b'] = b'B'
         self.assertEqual(d[b'a'], b'A', "Failed to insert A")
@@ -27,7 +27,7 @@ class HashMapTest(unittest.TestCase):
         self.assertEqual(d[b'b'], b'B', "Changing a changed b")
 
     def test_contains(self):
-        d = HashMap(capacity=4)
+        d = HashTable(capacity=4)
         d[b'a'] = b'hi'
         d[b'b'] = b'Bee'
 
@@ -35,7 +35,7 @@ class HashMapTest(unittest.TestCase):
         self.assertTrue(b'b' in d)
         self.assertTrue(b'nope' not in d)
 
-        d = HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_int)
+        d = HashTable(key_type=ctypes.c_char_p, value_type=ctypes.c_int)
         for i, letter in enumerate(uppercase):
             d[letter] = i
 
@@ -46,7 +46,7 @@ class HashMapTest(unittest.TestCase):
             self.assertTrue(letter not in d, "Somehow contains letter: %s" % letter)
 
     def test_iteration(self):
-        d = HashMap(key_type=ctypes.c_int, value_type=ctypes.c_char_p, capacity=30)
+        d = HashTable(key_type=ctypes.c_int, value_type=ctypes.c_char_p, capacity=30)
 
         for i, letter in enumerate(uppercase):
             d[i] = letter
@@ -68,7 +68,7 @@ class HashMapTest(unittest.TestCase):
             self.assertTrue(d[key], value)
 
     def test_memory_error(self):
-        d = HashMap(capacity=4)
+        d = HashTable(capacity=4)
         d[b'a'] = b"a"
         d[b'b'] = b"tester"
         d[b'c'] = b"something new"
@@ -78,14 +78,14 @@ class HashMapTest(unittest.TestCase):
             d[b'oh no'] = b'too many!'
 
     def test_initialize(self):
-        d = HashMap(lower_to_upper.items())
+        d = HashTable(lower_to_upper.items())
         self.assertEqual(len(d), len(lowercase))
 
         for ll, ul in zip(lowercase, uppercase):
             self.assertEqual(d[ll], ul)
 
     def test_update(self):
-        d = HashMap()
+        d = HashTable()
         d.update(lower_to_upper)
         self.assertEqual(len(d), len(lowercase))
 
@@ -93,7 +93,7 @@ class HashMapTest(unittest.TestCase):
             self.assertEqual(d[ll], ul)
 
     def test_insert(self):
-        d = HashMap()
+        d = HashTable()
         d.insert(lower_to_upper.items())
         self.assertEqual(len(d), len(lowercase))
 
@@ -101,7 +101,7 @@ class HashMapTest(unittest.TestCase):
             self.assertEqual(d[ll], ul)
 
     def test_clear(self):
-        d = HashMap(upper_to_i.items(), key_type=ctypes.c_char_p, value_type=ctypes.c_int)
+        d = HashTable(upper_to_i.items(), key_type=ctypes.c_char_p, value_type=ctypes.c_int)
 
         d.clear()
         self.assertEqual(len(d), 0)
@@ -110,14 +110,14 @@ class HashMapTest(unittest.TestCase):
         self.assertEqual(len(d), len(upper_to_i))
 
     def test_len(self):
-        d = HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_int)
+        d = HashTable(key_type=ctypes.c_char_p, value_type=ctypes.c_int)
         self.assertEqual(len(d), 0)
 
         d.update(upper_to_i)
         self.assertEqual(len(d), len(upper_to_i))
 
     def test_delete(self):
-        d = HashMap(upper_to_i.items(), key_type=ctypes.c_char_p, value_type=ctypes.c_int)
+        d = HashTable(upper_to_i.items(), key_type=ctypes.c_char_p, value_type=ctypes.c_int)
 
         del d[b'A']
         self.assertTrue(b'A' not in d)
@@ -135,7 +135,7 @@ class HashMapTest(unittest.TestCase):
         self.assertEqual(len(d), 0)
 
     def test_multiprocessing_write(self):
-        d = HashMap(upper_to_i.items(), key_type=ctypes.c_char_p, value_type=ctypes.c_int)
+        d = HashTable(upper_to_i.items(), key_type=ctypes.c_char_p, value_type=ctypes.c_int)
 
         def modify():
             d[b'A'] = 12345
@@ -146,7 +146,7 @@ class HashMapTest(unittest.TestCase):
         self.assertEqual(d[b'A'], 12345)
 
     def test_multiprocessing_lock(self):
-        d = HashMap(upper_to_i.items(), key_type=ctypes.c_char_p, value_type=ctypes.c_int, lock=mp.Lock())
+        d = HashTable(upper_to_i.items(), key_type=ctypes.c_char_p, value_type=ctypes.c_int, lock=mp.Lock())
 
         def modify1():
             d[b'A'] = 1111
@@ -166,7 +166,7 @@ class HashMapTest(unittest.TestCase):
         self.assertTrue(d[b'A'] in [1111, 2222])
 
     def test_multiprocessing_delete(self):
-        d = HashMap(upper_to_i.items(), key_type=ctypes.c_char_p, value_type=ctypes.c_int, lock=mp.Lock())
+        d = HashTable(upper_to_i.items(), key_type=ctypes.c_char_p, value_type=ctypes.c_int, lock=mp.Lock())
 
         def delete_1():
             del d[b'A']
@@ -188,7 +188,7 @@ class HashMapTest(unittest.TestCase):
         self.assertTrue(b'B' not in d)
 
     def test_multiprocessing_update(self):
-        d = HashMap(key_type=ctypes.c_int, value_type=ctypes.c_int, lock=mp.Lock())
+        d = HashTable(key_type=ctypes.c_int, value_type=ctypes.c_int, lock=mp.Lock())
 
         def update_1():
             d.update({1: 1, 11: 11, 111: 111})
