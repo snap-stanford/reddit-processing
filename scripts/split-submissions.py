@@ -14,9 +14,7 @@ import os
 import psutil
 from reddit import *
 
-import shmht  # shared memory hash table
-
-lock = mp.Lock()
+import dbm
 
 def load_it_unpack(args):
     load_it(*args)
@@ -34,7 +32,6 @@ def load_it(fd, fname):
 def load_shmht(directory, fd):
     pool = mp.Pool(pool_size)
     pool.map(load_it_unpack, [(fd, file) for file in listdir(directory)])
-
 
 def load_dict_shared_memory(args):
     fname, d_shm = args
@@ -90,6 +87,11 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     global target_directories
     target_directories = create_target_directories(output_directory, num_splits)
     logger.debug("Target directories created.")
+
+    db_cache = '/lfs/madmax3/0/jdeaton/'
+
+    logger.debug("Creating database in: %s" % db_cache)
+    db = dbm.open(db_cache, 'c')
 
     if not os.path.isdir(cache_dir) or not os.listdir(cache_dir):  # Missing/empty directory
         # The comment data must be loaded and read so that we have the mapping

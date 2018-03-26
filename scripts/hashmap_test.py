@@ -212,59 +212,5 @@ class HashMapTest(unittest.TestCase):
         self.assertEqual(len(d), 6)
 
 
-def performance_test():
-    import time
-    import dbm
-    from itertools import permutations
-
-    def test_dict(d):
-        for p in [''.join(p) for p in permutations('1234567')]:
-            d[p.encode()] = p.encode()
-
-    def test_lookup(d):
-        for p in [''.join(p) for p in permutations('1234567')]:
-            if p.encode() in d:
-                pass
-
-    d = {}
-    t = time.time()
-    test_dict(d)
-    print("dict insert: %s" % (time.time() - t))
-
-    t = time.time()
-    test_lookup(d)
-    print("dict lookup: %s" % (time.time() - t))
-
-    d = HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000)
-    t = time.time()
-    test_dict(d)
-    print("Shared-Memory HashMap insert: %s" % (time.time() - t))
-
-    t = time.time()
-    test_lookup(d)
-    print("Shared-Memory HashMap lookup: %s" % (time.time() - t))
-
-    d = mp.Manager().dict()
-    t = time.time()
-    test_dict(d)
-    print("Manager().dict insert: %s" % (time.time() - t))
-
-    t = time.time()
-    test_lookup(d)
-    print("Manager().dict lookup: %s" % (time.time() - t))
-
-    db = dbm.open('cache', 'c')
-    t = time.time()
-    test_dict(db)
-    print("dbm insert time: %s" % (time.time() - t))
-
-    t = time.time()
-    test_lookup(db)
-    print("dbm lookup time: %s" % (time.time() - t))
-
-    db.close()
-
-
 if __name__ == "__main__":
-    performance_test()
     unittest.main()
