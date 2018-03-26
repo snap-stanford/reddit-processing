@@ -17,12 +17,14 @@ from reddit import *
 import gdbm as dbm
 import progressbar
 
+def load_log(fname):
+    d = load_dict(fname)
+    logger.debug("Loaded: %s" % os.path.split(fname)[1])
+    return d
+
 def load_dict_cache_into_db(directory, database):
     logger.debug("Loading dictionaries from cache...")
-    def load_log(fname):
-        d = load_dict(fname)
-        logger.debug("Loaded: %s" % os.path.split(fname)[1])
-        return d
+
     pool = mp.Pool(pool_size)
     dicts = pool.map(load_log, listdir(directory))
 
