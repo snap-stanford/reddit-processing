@@ -21,6 +21,8 @@ def test_dict_lookup(d):
             pass
 
 def performance_test():
+
+    # Standard Python dictionary
     d = {}
     t = time.time()
     test_dict_insert(d)
@@ -30,15 +32,19 @@ def performance_test():
     test_dict_lookup(d)
     print("dict lookup: %s" % (time.time() - t))
 
-    # d = HashMap(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000)
-    # t = time.time()
-    # test_dict(d)
-    # print("Shared-Memory HashMap insert: %s" % (time.time() - t))
-    #
-    # t = time.time()
-    # test_lookup(d)
-    # print("Shared-Memory HashMap lookup: %s" % (time.time() - t))
 
+    # Shared memory hash table
+    d = HashTable(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000)
+    t = time.time()
+    test_dict_insert(d)
+    print("Shared-Memory HashMap insert: %s" % (time.time() - t))
+
+    t = time.time()
+    test_dict_lookup(d)
+    print("Shared-Memory HashMap lookup: %s" % (time.time() - t))
+
+
+    # SNAP THash
     d = snap.TStrStrH()
     t = time.time()
     test_dict_insert(d)
@@ -48,6 +54,8 @@ def performance_test():
     test_dict_lookup(d)
     print("SNAP THash lookup: %s" % (time.time() - t))
 
+
+    # Multiprocessing Manager
     d = mp.Manager().dict()
     t = time.time()
     test_dict_insert(d)
@@ -57,11 +65,8 @@ def performance_test():
     test_dict_lookup(d)
     print("Manager().dict lookup: %s" % (time.time() - t))
 
-    fd = shmht.open("/lfs/madmax3/0/jdeaton/shmht_cache/cache"), 2000000000, 1)
-    t = time.time()
 
-
-
+    # Gnu dbm database
     db = gdbm.open('/lfs/madmax3/0/jdeaton/dbm_cache/cache', 'c')
     t = time.time()
     test_dict_insert(db)
