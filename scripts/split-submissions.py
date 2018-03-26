@@ -72,14 +72,20 @@ import gdbm as dbm
 #     return d
 
 
-def load_dict_cache_into_db(directory, db):
-    import progressbar
-    bar = progressbar.ProgressBar()
-    for file in bar(list(listdir(directory))):
-        for key, value in load_dict(file).items():
-            db[key] = value
-    # dicts = mp.Pool(pool_size).map(load_dict(file) for )
+def load_log(fname):
+    d = load_dict(fname)
+    logger.debug("Loaded: %s" % os.path.split(fname)[1])
+    return d
 
+def load_dict_cache_into_db(directory, database):
+    import progressbar
+    logger.debug("Loading dictionaries from cache...")
+    dicts = mp.Pool(pool_size).map(load_log, listdir(directory))
+    bar = progressbar.ProgressBar()
+    logger.debug("Dumping dictionaries into database...")
+    for d in bar(dicts):
+        for key, value in d.items():
+            database[key] = value
 
 def split_by_submission(reddit_directory, output_directory, num_splits, cache_dir="comment_maps"):
     """
