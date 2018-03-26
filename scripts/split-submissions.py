@@ -114,7 +114,7 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     # logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
 
     db_cache = '/lfs/madmax3/0/jdeaton/db_cache/cache'
-    logger.debut("Loading comment cache into database at: %s" % db_cache)
+    logger.debug("Loading comment cache into database at: %s" % db_cache)
     logger.debug("Creating database in: %s" % db_cache)
     db = dbm.open(db_cache, 'c')
     load_dict_cache_into_db(cache_dir, db)
