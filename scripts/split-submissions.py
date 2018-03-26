@@ -15,74 +15,19 @@ import psutil
 from reddit import *
 
 import gdbm as dbm
-
-# def load_it_unpack(args):
-#     load_it(*args)
-#
-# def load_it(fd, fname):
-#     logger.debug("Reading: %s" % os.path.split(fname)[1])
-#     d = load_dict(fname)
-#     lock.acquire()
-#     logger.debug("Loading into shared memory: %s" % os.path.split(fname)[1])
-#     for key, value in d.items():
-#         shmht.setval(fd, key, value)
-#     logger.debug("Loaded: %s" % os.path.split(fname)[1])
-#     lock.release()
-#
-# def load_shmht(directory, fd):
-#     pool = mp.Pool(pool_size)
-#     pool.map(load_it_unpack, [(fd, file) for file in listdir(directory)])
-#
-# def load_dict_shared_memory(args):
-#     fname, d_shm = args
-#     d_shm.update(load_dict(fname))
-#     logger.debug("Loaded: %s" % os.path.split(fname)[1])
-#
-# def load_dict_cache(directory, shared_memory=False):
-#     """
-#     Loads dictionaries from files into a dictionary
-#
-#     Loads a collection of dictionaries stored in a set of files located in a directory
-#     :param directory: A directory containing the files of pickled dictionaries
-#     :param shared_memory: Whether the dictionary should be loaded into a shared memory dictionary
-#     :return: A single dictionary made by loading and concatenating all of the dictionaries in
-#     the specified directory
-#     """
-#     d = mp.Manager().dict() if shared_memory else {}
-#
-#     # if shared_memory:
-#     #     # manager = mp.Manager()
-#     #     # d = manager.dict()  # Make a shared memory dictionary
-#     #
-#     #     pool = mp.Pool(pool_size)
-#     #     pool.map(load_dict_shared_memory, [(file, d) for file in listdir(directory)])
-#     # else:
-#     #     try:
-#     #         import progressbar  # try to use a nice progressbar if you can...
-#     #         bar = progressbar.ProgressBar()
-#     #         for file in bar(list(listdir(directory))):
-#     #             d.update(load_dict(file))
-#     #     except ImportError:
-#     #         dict_files = listdir(directory)
-#     #         num_dicts = len(dict_files)
-#     #         for i, file in enumerate(dict_files):
-#     #             d.update(load_dict(file))
-#     #             if i and i % 10 == 1:
-#     #                 logger.debug("Loaded %d / %d" % (i, num_dicts))
-#     return d
-
-
-def load_log(fname):
-    d = load_dict(fname)
-    logger.debug("Loaded: %s" % os.path.split(fname)[1])
-    return d
+import progressbar
 
 def load_dict_cache_into_db(directory, database):
-    import progressbar
     logger.debug("Loading dictionaries from cache...")
-    dicts = mp.Pool(pool_size).map(load_log, listdir(directory))
-    bar = progressbar.ProgressBar()
+    def load_log(fname):
+        d = load_dict(fname)
+        logger.debug("Loaded: %s" % os.path.split(fname)[1])
+        return d
+    pool = mp.Pool(pool_size)
+    dicts = pool.map(load_log, listdir(directory))
+
     logger.debug("Dumping dictionaries into database...")
+    bar = progressbar.ProgressBar()
     for d in bar(dicts):
         for key, value in d.items():
             database[key] = value
