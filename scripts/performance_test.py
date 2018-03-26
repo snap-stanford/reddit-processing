@@ -1,5 +1,10 @@
 """
-File: p
+File: performance_test.py
+
+This file is for comparing different implementations of key-value stores
+that might be used to solve my problem shown here:
+
+stackoverflow.com/questions/49438954/python-shared-memory-dictionary-for-mapping-big-data
 
 """
 
@@ -11,10 +16,9 @@ import multiprocessing as mp
 
 from hashmap import HashTable
 if sys.version_info < (3, 0):
-    import gdbm
+    import gdbm as dbm
 else:
     import dbm
-import shmht
 import snap
 
 
@@ -66,7 +70,7 @@ def performance_test():
     test_it(snap.TStrStrH(), "SNAP THash", norm_insert, norm_lookup)
     test_it(mp.Manager().dict(), "mp.Manager.dict", norm_insert, norm_lookup)
 
-    db = gdbm.open('/lfs/madmax3/0/jdeaton/dbm_cache/cache', 'c')
+    db = dbm.open('/lfs/madmax3/0/jdeaton/dbm_cache/cache', 'c')
     test_it(db, "dbm", norm_insert, norm_lookup)
     db.close()
 
