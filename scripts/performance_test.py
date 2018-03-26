@@ -1,3 +1,8 @@
+"""
+File: p
+
+"""
+
 import time
 import sys
 from itertools import permutations
@@ -5,12 +10,15 @@ import ctypes
 import multiprocessing as mp
 
 from hashmap import HashTable
-import gdbm
+if sys.version_info < (3, 0):
+    import gdbm
+else:
+    import dbm
 import shmht
 import snap
 
-perm_set = '1234567'
 
+perm_set = '1234567'
 
 def test_dict_insert(d):
     for p in [''.join(p) for p in permutations(perm_set)]:
@@ -27,12 +35,12 @@ def test_it(d, name, norm_insert, norm_lookup):
     t = time.time()
     test_dict_insert(d)
     t_insert = time.time() - t
-    print("%s insert: %s (%s)" % (name, t_insert, t_insert / norm_insert))
+    print("%s insert: %s sec. (x %s)" % (name, t_insert, t_insert / norm_insert))
 
     t = time.time()
     test_dict_lookup(d)
     t_lookup = time.time() - t
-    print("%s lookup: %s (%s)" % (name, t_lookup, t_lookup / norm_lookup))
+    print("%s lookup: %s sec. (x %s)" % (name, t_lookup, t_lookup / norm_lookup))
 
 def performance_test():
 
@@ -41,12 +49,12 @@ def performance_test():
     t = time.time()
     test_dict_insert(d)
     norm_insert = time.time() - t
-    print("dict insert: %s" % norm_insert)
+    print("dict insert: %s sec." % norm_insert)
 
     t = time.time()
     test_dict_lookup(d)
     norm_lookup = time.time() - t
-    print("dict lookup: %s" % norm_lookup)
+    print("dict lookup: %s sec." % norm_lookup)
 
     # Shared memory hash table
     if sys.version_info < (3, 0):
