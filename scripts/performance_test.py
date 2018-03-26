@@ -34,7 +34,10 @@ def performance_test():
 
 
     # Shared memory hash table
-    d = HashTable(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000)
+    if sys.version_info < (3, 0):
+        d = HashTable("table", capacity=1000000)
+    else:
+        d = HashTable(key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000000)
     t = time.time()
     test_dict_insert(d)
     print("Shared-Memory HashMap insert: %s" % (time.time() - t))
