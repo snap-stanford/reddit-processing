@@ -14,7 +14,7 @@ import os
 import psutil
 from reddit import *
 
-import dbm
+import gdbm as dbm
 
 def load_it_unpack(args):
     load_it(*args)
