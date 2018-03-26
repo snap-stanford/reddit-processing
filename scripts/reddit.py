@@ -110,7 +110,7 @@ def load_dict(fname):
     return pickle.load(open(fname, 'rb'))
 
 
-def split_file(on, file_path, targets, num_splits, map_columns=None, maps_dir=None):
+def split_file(on, file_path, targets, num_splits, map_columns=None, database=None):
     """
     Splits the rows of a data frame stored in a file on a specified column
 
@@ -120,7 +120,7 @@ def split_file(on, file_path, targets, num_splits, map_columns=None, maps_dir=No
     :param num_splits: The number of buckets to split the data frame up into
     :param map_columns: A tuple specifying two columns of the data frame that need to be
     zipped together into a python dictionary and saved to file. Must pass maps_dir as well.
-    :param maps_dir: A directory to save the mapping (dictionary) between the two columns specified
+    :param database: A directory to save the mapping (dictionary) between the two columns specified
     in map_columns. Must be passed with map_columns
     :return: None
     """
@@ -134,14 +134,12 @@ def split_file(on, file_path, targets, num_splits, map_columns=None, maps_dir=No
     logger.debug("Splitting: %s" % file_name)
     file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
     split_data_frame(df, on, lambda x: hash(x) % num_splits, file_targets)
-    if map_columns and maps_dir is None:
+    if (map_columns is None) != (database is None):
         raise ValueError("Neither or both of map_columns and maps_dir must be passed.")
-    if map_columns and maps_dir:  # Need to pass both
+    if map_columns is not None and database is not None:  # Need to pass both
         logger.debug("Mapping column %s of %s" % (map_columns[0], file_name))
-        output_file = os.path.join(maps_dir, os.path.splitext(file_name)[0] + "_map.txt")
-        col_map = dict(zip(df[map_columns[0]], df[map_columns[1]]))  # Get the mapping of one column to another
-        logger.debug("Saving map: %s" % output_file)
-        save_dict(col_map, output_file)
+        for key, value in zip(df[map_columns[0]], df[map_columns[1]]):
+            database[key] = value
 
 
 def unpack_split_file(args):

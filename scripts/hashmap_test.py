@@ -13,6 +13,7 @@ upper_to_upper = {ul: ul for ul in uppercase}
 upper_to_lower = {ul: ll for ll, ul in zip(lowercase, uppercase)}
 lower_to_upper = {ll: ul for ll, ul in zip(lowercase, uppercase)}
 
+
 class HashMapTest(unittest.TestCase):
 
     def test_setting(self):
@@ -211,6 +212,9 @@ class HashMapTest(unittest.TestCase):
 
         self.assertEqual(len(d), 6)
 
+    def test_strings(self):
+        # d = HashTable(value_type=ctypes.c_char * 10)
+        pass
 
 if __name__ == "__main__":
     unittest.main()

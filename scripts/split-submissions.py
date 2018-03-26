@@ -88,30 +88,17 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     target_directories = create_target_directories(output_directory, num_splits)
     logger.debug("Target directories created.")
 
-    db_cache = '/lfs/madmax3/0/jdeaton/'
-
+    db_cache = '/lfs/madmax3/0/jdeaton/dbm_cache'
     logger.debug("Creating database in: %s" % db_cache)
-    db = dbm.open(db_cache, 'c')
-
-    if not os.path.isdir(cache_dir) or not os.listdir(cache_dir):  # Missing/empty directory
+    with dbm.open(db_cache, 'n') as db:
         # The comment data must be loaded and read so that we have the mapping
         # from comment full-name to base (submission) full-name, which is required for the splitting
         # of the other data sets
-        mkdir(cache_dir)
-        logger.info("No {comment --> submission} mapping cache found.")
-        logger.info("Processing comment tables...")
+        logger.debug("Splitting comments and building comment --> submission database")
         split_data_set(reddit_directory, "stanford_comment_data", "post_fullname", num_splits, output_directory,
-                       maps_dir=cache_dir,
+                       database=db,
                        map_columns=("comment_fullname", "post_fullname"))
-
-    logger.debug("Loading comment cache from: %s" % cache_dir)
-    # global comment_post_mapping  # stores map from comment fullname -> base submission id
-    # comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
-    # logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
-
-    fd = shmht.open(os.path.join(output_directory, "shmht"), 2000000000, 1)
-    load_shmht(cache_dir, fd)
-    logger.info("Loaded comment cache into shared memory hash table")
+        logger.debug("Finished creating database of comments. Saving to: %s" % cache_dir)
 
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
@@ -122,11 +109,11 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
 
     #  Now split the rest of the data while adding a column using the mapping that we have
     for data_set_name in ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]:
-        mapped_split(reddit_directory, data_set_name, 'target_fullname', 'post_fullname', num_splits)
+        mapped_split(reddit_directory, data_set_name, 'target_fullname', 'post_fullname', num_splits, db_cache)
 
-    shmht.close(fd)
+    db.close()
 
-def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits):
+def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits, db_cache):
     """
     Splits a reddit dataset
 
@@ -140,7 +127,7 @@ def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits):
 
     table_files = os.listdir(os.path.join(reddit_dir, data_set_name))
     args_list = [
-        (reddit_dir, data_set_name, table_fname, mapped_col, result_col, num_splits)
+        (reddit_dir, data_set_name, table_fname, mapped_col, result_col, num_splits, db_cache)
         for table_fname in table_files
     ]
 
@@ -156,7 +143,7 @@ def unpack_mapped_split_core(args):
     mapped_split_core(*args)
 
 
-def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, result_col, num_splits):
+def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, result_col, num_splits, db_cache):
     """
     Core routine of the mapped_split routine.
 
@@ -179,21 +166,13 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
-    def get_base_submission(target_fullname):
-        if target_fullname in comment_post_mapping:
-            return comment_post_mapping[target_fullname]
-        else:
-            return target_fullname
+    with dbm.open(db_cache, 'rfu') as db:
+        def get_base(comment):
+            return db[comment] if comment in db else comment
 
-    def get_base_from_cpp(target_fullname):
-        if libdict.contains(target_fullname) == "True":
-            return libdict.get_value(target_fullname)
-        return target_fullname
-
-    logger.debug("Mapping column: %s" % table_file_name)
-    # df[result_col] = df[mapped_col].apply(get_base_submission)  # The vanilla version
-    df[result_col] = df[mapped_col].apply(get_base_from_cpp)  # the CPP version
-    df[result_col].fillna("missing", inplace=True)
+        logger.debug("Mapping column: %s" % table_file_name)
+        df[result_col] = df[mapped_col].apply(get_base)
+        df[result_col].fillna("missing", inplace=True)
 
     # Make a map of output files for each of the splits as well as creating the
     # directories that they belong in
@@ -210,7 +189,7 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
 
 # basic operations
 def split_data_set(reddit_path, data_set_name, on, num_splits, output_directory,
-                   maps_dir=None, map_columns=None):
+                   map_columns=None, database=None):
     targets = {}
     for i in range(num_splits):
         targets[i] = os.path.join(target_directories[i], data_set_name)
@@ -218,14 +197,19 @@ def split_data_set(reddit_path, data_set_name, on, num_splits, output_directory,
 
     full_sub_data_path = os.path.join(reddit_path, data_set_name)
     data_files = map(lambda f: os.path.join(full_sub_data_path, f), os.listdir(full_sub_data_path))
-    args_list = [(on, table_file, targets, num_splits, map_columns, maps_dir) for table_file in data_files]
+    args_list = [(on, table_file, targets, num_splits, map_columns, database) for table_file in data_files]
 
-    process = psutil.Process(os.getpid())
-    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
+    if database is None:
+        args_list = [(on, table_file, targets, num_splits, map_columns, database) for table_file in data_files]
+        process = psutil.Process(os.getpid())
+        logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
-    logger.debug("PID: %d, forking..." % process.pid)
-    pool = mp.Pool(pool_size)
-    pool.map(unpack_split_file, args_list)
+        logger.debug("PID: %d, forking..." % process.pid)
+        pool = mp.Pool(pool_size)
+        pool.map(unpack_split_file, args_list)
+    else:
+        for table_file in data_files:
+            split_file(on, table_file, targets, num_splits, map_columns, db)
 
 
 def create_target_directories(output_directory, num_splits):

@@ -70,7 +70,7 @@ def performance_test():
     test_it(snap.TStrStrH(), "SNAP THash", norm_insert, norm_lookup)
     test_it(mp.Manager().dict(), "mp.Manager.dict", norm_insert, norm_lookup)
 
-    db = dbm.open('/lfs/madmax3/0/jdeaton/dbm_cache/cache', 'c')
+    db = dbm.open('/lfs/madmax3/0/jdeaton/dbm_cache/cache', 'n')
     test_it(db, "dbm", norm_insert, norm_lookup)
     db.close()
 
