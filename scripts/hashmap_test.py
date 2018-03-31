@@ -2,7 +2,7 @@
 import unittest
 import string
 import ctypes
-from hashmap import HashTable
+from hashtable import HashTable
 import multiprocessing as mp
 
 uppercase = [l.encode() for l in string.ascii_uppercase]

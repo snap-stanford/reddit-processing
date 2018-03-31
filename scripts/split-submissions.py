@@ -14,25 +14,30 @@ import os
 import psutil
 from reddit import *
 
-import gdbm as dbm
 import progressbar
+from hashtable import HashTable
+
 
 def load_log(fname):
     d = load_dict(fname)
     logger.debug("Loaded: %s" % os.path.split(fname)[1])
     return d
 
-def load_dict_cache_into_db(directory, database):
+
+def load_dict_cache_into_db(directory, ht):
     logger.debug("Loading dictionaries from cache...")
 
+    # load in parallel
     pool = mp.Pool(pool_size)
     dicts = pool.map(load_log, listdir(directory))
 
-    logger.debug("Dumping dictionaries into database...")
+    logger.debug("Dumping dictionaries into shared memory hash table...")
+    # but dump in parallel
     bar = progressbar.ProgressBar()
     for d in bar(dicts):
         for key, value in d.items():
-            database[key] = value
+            ht[key.encode()] = value.encode()
+
 
 def split_by_submission(reddit_directory, output_directory, num_splits, cache_dir="comment_maps"):
     """
@@ -68,11 +73,11 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
 
     db_cache = '/lfs/madmax3/0/jdeaton/db_cache/cache'
     logger.debug("Loading comment cache into database at: %s" % db_cache)
-    logger.debug("Creating database in: %s" % db_cache)
-    db = dbm.open(db_cache, 'cfu')
-    load_dict_cache_into_db(cache_dir, db)
-    db.close()
-    logger.info("Loaded comment cache database.")
+    logger.debug("Creating shared memory hash-table")
+    global ht
+    ht = HashTable(capacity=int(2e9))
+    load_dict_cache_into_db(cache_dir, ht)
+    logger.info("Loaded comment cache into hash table: %d entries" % len(ht))
 
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
@@ -137,13 +142,12 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
-    with dbm.open(db_cache, 'rfu') as db:
-        def get_base(comment):
-            return db[comment] if comment in db else comment
+    def get_base(comment):
+        return ht[comment.encode()] if comment.encode() in ht else comment
 
-        logger.debug("Mapping column: %s" % table_file_name)
-        df[result_col] = df[mapped_col].apply(get_base)
-        df[result_col].fillna("missing", inplace=True)
+    logger.debug("Mapping column: %s" % table_file_name)
+    df[result_col] = df[mapped_col].apply(get_base)
+    df[result_col].fillna("missing", inplace=True)
 
     # Make a map of output files for each of the splits as well as creating the
     # directories that they belong in
