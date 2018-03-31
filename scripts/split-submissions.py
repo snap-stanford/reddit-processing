@@ -71,8 +71,6 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     # comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
     # logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
 
-    db_cache = '/lfs/madmax3/0/jdeaton/db_cache/cache'
-    logger.debug("Loading comment cache into database at: %s" % db_cache)
     logger.debug("Creating shared memory hash-table")
     global ht
     ht = HashTable(capacity=int(2e9))
