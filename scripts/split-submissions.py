@@ -86,10 +86,10 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
 
     #  Now split the rest of the data while adding a column using the mapping that we have
     for data_set_name in ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]:
-        mapped_split(reddit_directory, data_set_name, 'target_fullname', 'post_fullname', num_splits, db_cache)
+        mapped_split(reddit_directory, data_set_name, 'target_fullname', 'post_fullname', num_splits)
 
 
-def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits, db_cache):
+def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits):
     """
     Splits a reddit dataset
     :param reddit_dir: Top level reddit directory
@@ -102,7 +102,7 @@ def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits, 
 
     table_files = os.listdir(os.path.join(reddit_dir, data_set_name))
     args_list = [
-        (reddit_dir, data_set_name, table_fname, mapped_col, result_col, num_splits, db_cache)
+        (reddit_dir, data_set_name, table_fname, mapped_col, result_col, num_splits)
         for table_fname in table_files
     ]
 
@@ -118,7 +118,7 @@ def unpack_mapped_split_core(args):
     mapped_split_core(*args)
 
 
-def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, result_col, num_splits, db_cache):
+def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, result_col, num_splits):
     """
     Core routine of the mapped_split routine.
     Splits a single table file
