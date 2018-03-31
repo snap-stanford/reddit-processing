@@ -16,7 +16,7 @@ def main():
     redis_db.set('backend', 'scala')
     redis_db.set('frontend', "javascript")
 
-    redis_db.mset({'you': 'wanna', 'be':'high', 'for': 'it'})
+    redis_db.mset({'you': 'wanna', 'be': 'high', 'for': 'it'})
 
     values = redis_db.mget(['full stack', 'backend', 'mobile', 'you'])
 

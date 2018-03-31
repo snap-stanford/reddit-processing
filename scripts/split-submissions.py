@@ -23,7 +23,8 @@ def load_log(fname):
     d = load_dict(fname)
     logger.debug("Loaded: %s" % os.path.split(fname)[1])
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
-    redis_db.mset(d)  # dump dictionary into redis
+    for key, value in d.items():
+        redis_db.set(key, value) # dump dictionary into redis
     logger.debug("Dumped %s into Redis" % os.path.split(fname)[1])
 
 
