@@ -19,17 +19,25 @@ import progressbar
 import redis
 redis_pool = None
 
+
+def dump_dict_to_redis(redis_db, d, chunks=10):
+    try:
+       for chunk in range(chunks):
+            redis_db.mset({key: value for i, (key, value) in enumerate(d.items()) if i % chunk == 0})
+    except redis.exceptions.ConnectionError:
+        dump_dict_to_redis(redis_db, d, chunks=2*chunks)
+
+
 def load_log(fname):
     d = load_dict(fname)
     logger.debug("Loaded: %s" % os.path.split(fname)[1])
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
-    for key, value in d.items():
-        redis_db.set(key, value) # dump dictionary into redis
+    dump_dict_to_redis(redis_db, d)
     logger.debug("Dumped %s into Redis" % os.path.split(fname)[1])
 
 
 def load_dict_cache_into_db(directory):
-    pool = mp.Pool(pool_size) # load in parallel!
+    pool = mp.Pool(pool_size)  # load in parallel!
     pool.map(load_log, listdir(directory))
 
     # logger.debug("Dumping dictionaries into shared memory hash table...")
