@@ -15,28 +15,28 @@ import psutil
 from reddit import *
 
 import progressbar
-from hashtable import HashTable
-
+# from hashtable import HashTable
+import redis
+redis_pool = None
 
 def load_log(fname):
     d = load_dict(fname)
     logger.debug("Loaded: %s" % os.path.split(fname)[1])
-    return d
+    redis_db = redis.StrictRedis(connection_pool=redis_pool)
+    redis_db.mset(d)  # dump dictionary into redis
+    logger.debug("Dumped %s into Redis" % os.path.split(fname)[1])
 
 
-def load_dict_cache_into_db(directory, ht):
-    logger.debug("Loading dictionaries from cache...")
+def load_dict_cache_into_db(directory):
+    pool = mp.Pool(pool_size) # load in parallel!
+    pool.map(load_log, listdir(directory))
 
-    # load in parallel
-    pool = mp.Pool(pool_size)
-    dicts = pool.map(load_log, listdir(directory))
-
-    logger.debug("Dumping dictionaries into shared memory hash table...")
-    # but dump in parallel
-    bar = progressbar.ProgressBar()
-    for d in bar(dicts):
-        for key, value in d.items():
-            ht[key.encode()] = value.encode()
+    # logger.debug("Dumping dictionaries into shared memory hash table...")
+    # # but dump in parallel
+    # bar = progressbar.ProgressBar()
+    # for d in bar(dicts):
+    #     for key, value in d.items():
+    #         ht[key.encode()] = value.encode()
 
 
 def split_by_submission(reddit_directory, output_directory, num_splits, cache_dir="comment_maps"):
@@ -71,11 +71,12 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     # comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
     # logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
 
-    logger.debug("Creating shared memory hash-table")
-    global ht
-    ht = HashTable(capacity=int(2e9))
-    load_dict_cache_into_db(cache_dir, ht)
-    logger.info("Loaded comment cache into hash table: %d entries" % len(ht))
+    logger.debug("Loading dicts from cache into Redis...")
+    global redis_pool
+    redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
+    redis_db = redis.StrictRedis(connection_pool=redis_pool)
+    redis_db.config_set('dir', '/lfs/local/0/jdeaton/redis/')
+    load_dict_cache_into_db(cache_dir)
 
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
@@ -140,12 +141,14 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
-    def get_base(comment):
-        return ht[comment.encode()] if comment.encode() in ht else comment
+    # def get_base(comment):
+    #     return ht[comment.encode()] if comment.encode() in ht else comment
 
     logger.debug("Mapping column: %s" % table_file_name)
-    df[result_col] = df[mapped_col].apply(get_base)
-    df[result_col].fillna("missing", inplace=True)
+    redis_db = redis.StrictRedis(connection_pool=redis_pool)
+    df[result_col] = redis_db.mget(df[mapped_col])
+    # df.loc[df[result_col].isnull(), result_col] = df.loc[df[result_col].isnull(), mapped_col]
+    df[result_col].fillna(df[mapped_col], inplace=True)
 
     # Make a map of output files for each of the splits as well as creating the
     # directories that they belong in
@@ -153,7 +156,6 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     for i in target_directories:
         target_sub_dir = os.path.join(target_directories[i], data_set_name)
         mkdir(target_sub_dir)
-
         output_file_map[i] = os.path.join(target_sub_dir, table_file_name)
 
     logger.debug("Splitting: %s" % table_file_name)
