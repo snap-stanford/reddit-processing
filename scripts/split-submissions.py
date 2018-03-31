@@ -22,8 +22,8 @@ redis_pool = None
 
 def dump_dict_to_redis(redis_db, d, chunks=10):
     try:
-       for chunk in range(chunks):
-            redis_db.mset({key: value for i, (key, value) in enumerate(d.items()) if i % chunk == 0})
+        for chunk in range(chunks):
+            redis_db.mset({key: value for i, (key, value) in enumerate(d.items()) if i % chunks == chunk})
     except redis.exceptions.ConnectionError:
         logger.debug("Dumping in chunks of %d failed. Trying %d..." % (chunks, 2*chunks))
         dump_dict_to_redis(redis_db, d, chunks=2*chunks)
