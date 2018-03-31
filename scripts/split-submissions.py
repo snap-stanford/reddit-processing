@@ -17,16 +17,7 @@ from reddit import *
 import progressbar
 # from hashtable import HashTable
 import redis
-redis_pool = None
-
-
-def dump_dict_to_redis(redis_db, d, chunks=10):
-    try:
-        for chunk in range(chunks):
-            redis_db.mset({key: value for i, (key, value) in enumerate(d.items()) if i % chunks == chunk})
-    except redis.exceptions.ConnectionError:
-        logger.debug("Dumping in chunks of %d failed. Trying %d..." % (chunks, 2*chunks))
-        dump_dict_to_redis(redis_db, d, chunks=2*chunks)
+redis_pool = None  # Pool of connections to Redis database
 
 
 def load_log(fname):
@@ -49,7 +40,7 @@ def load_dict_cache_into_db(directory):
     #         ht[key.encode()] = value.encode()
 
 
-def split_by_submission(reddit_directory, output_directory, num_splits, cache_dir="comment_maps"):
+def split_by_submission(reddit_directory, output_directory, num_splits, cache_dir=None, redis_dir="redis"):
     """
     Splits the reddit dataset by submission ID
 
@@ -85,7 +76,7 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     global redis_pool
     redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
-    redis_db.config_set('dir', '/lfs/local/0/jdeaton/redis/')
+    redis_db.config_set('dir', redis_dir)  # Configure Redis database path
     load_dict_cache_into_db(cache_dir)
 
     process = psutil.Process(os.getpid())
@@ -227,6 +218,7 @@ def parse_args():
     io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
     io_options_group.add_argument('--cache', type=str, default="comment_map_cache",
                                   help="Submission mapping file cache")
+    io_options_group.add_argument('-db', '--database', help="Redis database directory")
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")

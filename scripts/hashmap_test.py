@@ -216,5 +216,6 @@ class HashMapTest(unittest.TestCase):
         # d = HashTable(value_type=ctypes.c_char * 10)
         pass
 
+
 if __name__ == "__main__":
     unittest.main()

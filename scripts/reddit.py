@@ -14,6 +14,7 @@ from enum import Enum
 import logging
 import pandas as pd
 import psutil
+import redis
 
 logger = logging.getLogger('root')
 
@@ -97,7 +98,8 @@ def save_dict(d, fname):
     :param fname: The filename to save it
     :return: None
     """
-    pickle.dump(d, open(fname, 'wb'))
+    with open(fname, 'wb') as f:
+        pickle.dump(d, f)
 
 
 def load_dict(fname):
@@ -107,7 +109,26 @@ def load_dict(fname):
     :param fname: Path to a file containing the serialized dictionary
     :return: The dictionary that was stored in the file
     """
-    return pickle.load(open(fname, 'rb'))
+    with open(fname, 'rb') as f:
+        return pickle.load(f)
+
+
+def dump_dict_to_redis(redis_db, d, chunks=10):
+    """
+    Stores a dictionary in a redis database
+
+    :param redis_db: The redis database to store the dictionary in
+    :param d: The dictionary to store in the database
+    :param chunks: The number of chunks to split the dictionary into in order
+    to store it in the database
+    :return: None
+    """
+    try:
+        for chunk in range(chunks):
+            redis_db.mset({key: value for i, (key, value) in enumerate(d.items()) if i % chunks == chunk})
+    except redis.exceptions.ConnectionError:
+        logger.debug("Dumping in chunks of %d failed. Trying %d..." % (chunks, 2*chunks))
+        dump_dict_to_redis(redis_db, d, chunks=2*chunks)
 
 
 def split_file(on, file_path, targets, num_splits, map_columns=None, database=None):

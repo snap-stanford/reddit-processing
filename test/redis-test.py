@@ -5,36 +5,56 @@ Date: 3/31/18
 Author: Jon Deaton (jdeaton@stanford.edu)
 """
 
+import unittest
 import redis
+import multiprocessing as mp
+import string
 
-def main():
-    # create a connection to the localhost Redis server instance, by default it runs on port 6379
-    redis_db = redis.StrictRedis(host="localhost", port=6379, db=0)
+def add_kv(kv):
+    add_redis(*kv)
 
-    redis_db.keys()
-    redis_db.set('full stack', 'python')
-    redis_db.set('backend', 'scala')
-    redis_db.set('frontend', "javascript")
+def add_redis(key, value):
+    redis_db = redis.StrictRedis(connection_pool=redis_pool)
+    redis_db.set(key, value)
 
-    redis_db.mset({'you': 'wanna', 'be': 'high', 'for': 'it'})
 
-    values = redis_db.mget(['full stack', 'backend', 'mobile', 'you'])
+class TestResis(unittest.TestCase):
 
-    redis_db.keys()
-    # # now we have one key so the output will be "[b'full stack']"
-    # redis_db.get('full stack')
-    # # output is "b'python'", the key and value still exist in Redis
-    # redis_db.incr('twilio')
-    # # output is "1", we just incremented even though the key did not
-    # # previously exist
-    # redis_db.get('twilio')
-    # # output is "b'1'" again, since we just obtained the value from
-    # # the existing key
-    # redis_db.delete('twilio')
-    # # output is "1" because the command was successful
-    # redis_db.get('twilio')
-    # # nothing is returned because the key and value no longer exist
+    def __init__(self, *args, **kwargs):
+        super(TestResis, self).__init__(*args, **kwargs)
+        global redis_pool
+        redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
+
+    def basic_test(self):
+        redis_db = redis.StrictRedis(connection_pool=redis_pool)
+        redis_db.keys()
+        redis_db.set('full stack', 'python')
+        redis_db.set('backend', 'scala')
+        redis_db.set('frontend', "javascript")
+
+        redis_db.mset({'you': 'wanna', 'be': 'high', 'for': 'it'})
+        values = redis_db.mget(['full stack', 'backend', 'mobile', 'you'])
+        self.assertEqual(values, ['python', 'scala', None, 'wanna'])
+
+    def test_fork(self):
+        ps = [mp.Process(target=add_redis, args=(l, l)) for l in string.ascii_lowercase]
+        for p in ps: p.start()
+        for p in ps: p.join()
+
+        # check to make sure that they all got inserted
+        redis_db = redis.StrictRedis(connection_pool=redis_pool)
+        for l in string.ascii_lowercase:
+            self.assertEqual(redis_db.get(l), l.encode())
+
+    def test_pool_map(self):
+        pool = mp.Pool(10)
+        pool.map(add_kv, [(l, l) for l in string.ascii_lowercase])
+
+        # check to make sure that they all got inserted
+        redis_db = redis.StrictRedis(connection_pool=redis_pool)
+        for l in string.ascii_lowercase:
+            self.assertEqual(redis_db.get(l), l.encode())
 
 
 if __name__ == "__main__":
-    main()
+    unittest.main()
