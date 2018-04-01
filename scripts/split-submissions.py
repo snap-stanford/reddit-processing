@@ -198,7 +198,7 @@ def parse_args():
     io_options_group.add_argument('-out', "--output", help="Output directory")
     io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
     io_options_group.add_argument('-db', '--redis', help="Redis database directory")
-    io_options_group.add_argument('--cache', action='store_true', help="Don't re-create the Redis cache")
+    io_options_group.add_argument('--cached', action='store_true', help="Don't re-create the Redis cache")
     io_options_group.add_argument('--map-cache', help="Cache of mapping in pickled dictionaries")
 
     options_group = parser.add_argument_group("Options")
@@ -243,7 +243,7 @@ def main():
         logger.debug("Output directory: %s" % output_directory)
 
     split_by_submission(input_directory, output_directory, args.num_splits,
-                        redis_dir=args.redis, cached=args.cache, map_cache=args.map_cache)
+                        redis_dir=args.redis, cached=args.cached, map_cache=args.map_cache)
 
 
 if __name__ == "__main__":
