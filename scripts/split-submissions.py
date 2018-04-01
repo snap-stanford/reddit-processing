@@ -64,7 +64,7 @@ def split_by_submission(reddit_directory, output_directory, num_splits, redis_di
                        redis_pool=redis_pool,
                        map_columns=("comment_fullname", "post_fullname"))
 
-    elif map_cache is not None or not os.path.isdir(map_cache) or not os.listdir(map_cache):
+    elif map_cache is not None and os.path.isdir(map_cache) and os.listdir(map_cache):
         logger.debug("Loading dictionaries from cache into Redis...")
         load_dict_cache_into_db(map_cache)
 
