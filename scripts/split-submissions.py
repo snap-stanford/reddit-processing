@@ -5,19 +5,18 @@ File: split-submissions.py
 Author: Jon Deaton
 Date: March, 2018
 """
+
+import os
 import sys
 import log
 import argparse
 import multiprocessing as mp
 import pandas as pd
-import os
 import psutil
-from reddit import *
-
 import progressbar
-# from hashtable import HashTable
+
+from reddit import *
 import redis
-redis_pool = None  # Pool of connections to Redis database
 
 
 def load_log(fname):
@@ -31,13 +30,6 @@ def load_log(fname):
 def load_dict_cache_into_db(directory):
     pool = mp.Pool(pool_size)  # load in parallel!
     pool.map(load_log, listdir(directory))
-
-    # logger.debug("Dumping dictionaries into shared memory hash table...")
-    # # but dump in parallel
-    # bar = progressbar.ProgressBar()
-    # for d in bar(dicts):
-    #     for key, value in d.items():
-    #         ht[key.encode()] = value.encode()
 
 
 def split_by_submission(reddit_directory, output_directory, num_splits, cache_dir=None, redis_dir="redis"):
@@ -53,40 +45,38 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     """
     logger.debug("Creating target directories...")
     global target_directories
-    target_directories = create_target_directories(output_directory, num_splits)
+    target_directories = create_split_directories(output_directory, num_splits)
     logger.debug("Target directories created.")
 
-    if not os.path.isdir(cache_dir) or not os.listdir(cache_dir):  # Missing/empty directory
-        # The comment data must be loaded and read so that we have the mapping
-        # from comment full-name to base (submission) full-name, which is required for the splitting
-        # of the other data sets
-        mkdir(cache_dir)
-        logger.info("No {comment --> submission} mapping cache found.")
-        logger.info("Processing comment tables...")
-        split_data_set(reddit_directory, "stanford_comment_data", "post_fullname", num_splits, output_directory,
-                       maps_dir=cache_dir,
-                       map_columns=("comment_fullname", "post_fullname"))
-
-    logger.debug("Loading comment cache from: %s" % cache_dir)
-    # global comment_post_mapping  # stores map from comment fullname -> base submission id
-    # comment_post_mapping = load_dict_cache(cache_dir, shared_memory=True)
-    # logger.info("Loaded comment cache with: %d entries" % len(comment_post_mapping))
-
-    logger.debug("Loading dicts from cache into Redis...")
+    logger.debug("Configuring Redis database in: %s" % redis_dir)
     global redis_pool
     redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
     redis_db.config_set('dir', redis_dir)  # Configure Redis database path
-    load_dict_cache_into_db(cache_dir)
+
+    if cache_dir is None or not os.path.isdir(cache_dir) or not os.listdir(cache_dir):  # Missing / empty directory
+        # The comment data must be loaded and read so that we have the mapping
+        # from comment full-name to base (submission) full-name, which is required for the splitting
+        # of the other data sets
+        mkdir(cache_dir)
+        logger.info("No {comment --> submission} map cached.")
+        logger.info("Processing comment tables...")
+        split_data_set(reddit_directory, "stanford_comment_data", "post_fullname", num_splits, target_directories,
+                       redis_pool=redis_pool,
+                       map_columns=("comment_fullname", "post_fullname"))
+    else:
+        # global comment_post_mapping  # stores map from comment fullname -> base submission id
+        logger.debug("Loading dicts from cache into Redis...")
+        load_dict_cache_into_db(cache_dir)
 
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
+    # Split the submission tables (they don't need to be mapped using the database
     logger.info("Processing submission tables...")
-    # Must first split up the submission data because
-    split_data_set(reddit_directory, "stanford_submission_data", "post_fullname", num_splits, output_directory)
+    split_data_set(reddit_directory, "stanford_submission_data", "post_fullname", num_splits, target_directories)
 
-    #  Now split the rest of the data while adding a column using the mapping that we have
+    # Now split the rest of the data while adding a column using the mapping that we have
     for data_set_name in ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]:
         mapped_split(reddit_directory, data_set_name, 'target_fullname', 'post_fullname', num_splits)
 
@@ -142,13 +132,9 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
-    # def get_base(comment):
-    #     return ht[comment.encode()] if comment.encode() in ht else comment
-
     logger.debug("Mapping column: %s" % table_file_name)
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
     df[result_col] = redis_db.mget(df[mapped_col])
-    # df.loc[df[result_col].isnull(), result_col] = df.loc[df[result_col].isnull(), mapped_col]
     df[result_col].fillna(df[mapped_col], inplace=True)
 
     # Make a map of output files for each of the splits as well as creating the
@@ -163,9 +149,21 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     split_data_frame(df, result_col, lambda s: hash(s) % num_splits, output_file_map)
 
 
-# basic operations
-def split_data_set(reddit_path, data_set_name, on, num_splits, output_directory,
-                   maps_dir=None, map_columns=None):
+def split_data_set(reddit_path, data_set_name, on, num_splits, target_directories,
+                   map_columns=None, redis_pool=None):
+    """
+    Splits a Reddit Dataset
+
+
+    :param reddit_path: Directory containing all Reddit Datasets
+    :param data_set_name: Name of the sub-directory containing the data-set to split
+    :param on: The column to split the data set on
+    :param num_splits: The number of ways to split the dataset
+    :param target_directories: Map of target directories for each split
+    :param map_columns: Tuple of columns to store a mapping between in the database
+    :param redis_pool: Pool of Redis database connections to dump the column mapping in
+    :return: None
+    """
     targets = {}
     for i in range(num_splits):
         targets[i] = os.path.join(target_directories[i], data_set_name)
@@ -173,34 +171,10 @@ def split_data_set(reddit_path, data_set_name, on, num_splits, output_directory,
 
     full_sub_data_path = os.path.join(reddit_path, data_set_name)
     data_files = map(lambda f: os.path.join(full_sub_data_path, f), os.listdir(full_sub_data_path))
-    args_list = [(on, table_file, targets, num_splits, map_columns, maps_dir) for table_file in data_files]
+    args_list = [(on, table_file, targets, num_splits, map_columns, redis_pool) for table_file in data_files]
 
-    process = psutil.Process(os.getpid())
-    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
-
-    logger.debug("PID: %d, forking..." % process.pid)
     pool = mp.Pool(pool_size)
     pool.map(unpack_split_file, args_list)
-
-
-def create_target_directories(output_directory, num_splits):
-    """
-    Creates the target directories for each independent subset of the data
-
-    Will create files named "00000", "00001", ..., "<num_splits - 1>" in the output_directory
-    :param output_directory: The output directory to put the target directories in
-    :param num_splits: The number of directories to create
-    :return: A dict mapping each number from 0 -> num_splits - 1 to a corresponding directory
-    """
-    target_directories = {i: os.path.join(output_directory, "%05d" % i) for i in range(num_splits)}
-    for i in target_directories:
-        target_dir = target_directories[i]
-        if os.path.isfile(target_dir):
-            logger.error("File exists: %s" % target_dir)
-            exit(1)
-        mkdir(target_dir)
-
-    return target_directories
 
 
 def parse_args():
@@ -216,9 +190,8 @@ def parse_args():
     io_options_group.add_argument('-in', "--input", help="Input directory")
     io_options_group.add_argument('-out', "--output", help="Output directory")
     io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
-    io_options_group.add_argument('--cache', type=str, default="comment_map_cache",
-                                  help="Submission mapping file cache")
-    io_options_group.add_argument('-db', '--database', help="Redis database directory")
+    io_options_group.add_argument('--cache', help="Submission mapping file cache")
+    io_options_group.add_argument('-db', '--redis', help="Redis database directory")
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")

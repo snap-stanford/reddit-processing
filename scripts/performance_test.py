@@ -36,6 +36,7 @@ except:
 
 perm_set = '1234567'
 
+
 def test_dict_insert(d):
     for p in [''.join(p) for p in permutations(perm_set)]:
         d[p.encode()] = p.encode()

@@ -124,14 +124,19 @@ def dump_dict_to_redis(redis_db, d, chunks=10):
     :return: None
     """
     try:
-        for chunk in range(chunks):
-            redis_db.mset({key: value for i, (key, value) in enumerate(d.items()) if i % chunks == chunk})
+        for c in range(chunks):
+            if type(d) is dict:
+                chunk = {key: value for i, (key, value) in enumerate(d.items()) if i % chunks == c}
+            else:
+                chunk = {key: value for i, (key, value) in enumerate(d) if i % chunks == c}
+            redis_db.mset(chunk)
+
     except redis.exceptions.ConnectionError:
         logger.debug("Dumping in chunks of %d failed. Trying %d..." % (chunks, 2*chunks))
         dump_dict_to_redis(redis_db, d, chunks=2*chunks)
 
 
-def split_file(on, file_path, targets, num_splits, map_columns=None, database=None):
+def split_file(on, file_path, targets, num_splits, map_columns=None, redis_pool=None):
     """
     Splits the rows of a data frame stored in a file on a specified column
 
@@ -141,8 +146,7 @@ def split_file(on, file_path, targets, num_splits, map_columns=None, database=No
     :param num_splits: The number of buckets to split the data frame up into
     :param map_columns: A tuple specifying two columns of the data frame that need to be
     zipped together into a python dictionary and saved to file. Must pass maps_dir as well.
-    :param database: A directory to save the mapping (dictionary) between the two columns specified
-    in map_columns. Must be passed with map_columns
+    :param redis_pool: Pool of redis database connections to dup the mapping into
     :return: None
     """
     file_name = os.path.split(file_path)[1]
@@ -155,12 +159,13 @@ def split_file(on, file_path, targets, num_splits, map_columns=None, database=No
     logger.debug("Splitting: %s" % file_name)
     file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
     split_data_frame(df, on, lambda x: hash(x) % num_splits, file_targets)
-    if (map_columns is None) != (database is None):
+    if (map_columns is None) != (redis_pool is None):
         raise ValueError("Neither or both of map_columns and maps_dir must be passed.")
-    if map_columns is not None and database is not None:  # Need to pass both
-        logger.debug("Mapping column %s of %s" % (map_columns[0], file_name))
-        for key, value in zip(df[map_columns[0]], df[map_columns[1]]):
-            database[key] = value
+    if map_columns is not None and redis_pool is not None:  # Need to pass both
+        logger.debug("Mapping col. %s of %s" % (map_columns[0], file_name))
+        redis_db = redis.StrictRedis(connection_pool=redis_pool)
+        logger.debug("Dumping %s into Redis" % file_name)
+        dump_dict_to_redis(redis_db, zip(df[map_columns[0]], df[map_columns[1]]))
 
 
 def unpack_split_file(args):
@@ -191,4 +196,24 @@ def split_data_frame(df, on, assign_split, output_file_map, temp_col='bkt', comp
     for i in output_file_map:
         df_out = df[df[temp_col] == i].drop(temp_col, axis=1)  # select rows and drop temporary column
         df_out.to_csv(output_file_map[i], index=False, compression='gzip' if compress else None)
+
+
+def create_split_directories(output_directory, num_splits):
+    """
+    Creates the target directories for each independent subset of the data
+
+    Will create files named "00000", "00001", ..., "<num_splits - 1>" in the output_directory
+    :param output_directory: The output directory to put the target directories in
+    :param num_splits: The number of directories to create
+    :return: A dict mapping each number from 0 -> num_splits - 1 to a corresponding directory
+    """
+    target_directories = {i: os.path.join(output_directory, "%05d" % i) for i in range(num_splits)}
+    for i in target_directories:
+        target_dir = target_directories[i]
+        if os.path.isfile(target_dir):
+            logger.error("File exists: %s" % target_dir)
+            exit(1)
+        mkdir(target_dir)
+
+    return target_directories
 

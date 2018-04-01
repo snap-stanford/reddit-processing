@@ -31,9 +31,11 @@ SCRATCH="$OUTPUT_DIRECTORY/scratch"
 USERS_SPLIT_DIR="$SCRATCH/user_split"
 SUBMISSIONS_SPLIT_DIR="$SCRATCH/submission_split"
 
+# Database to store comment --> base submission mapping (~100 GB)
+REDIS_DIR="$LFS_SCRATCH/redis"
+
 # Cache to store comment --> base submission mapping (~41 GB)
 COMMENT_CACHE="$SCRATCH/comment_map_cache"
-REDIS_DIR="$LFS_SCRATCH/redis"
 
 
 # Split and merge by user
