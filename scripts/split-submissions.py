@@ -32,7 +32,7 @@ def load_dict_cache_into_db(directory):
     pool.map(load_log, listdir(directory))
 
 
-def split_by_submission(reddit_directory, output_directory, num_splits, redis_dir="redis", cached=False, map_cache=None):
+def split_by_submission(reddit_directory, output_directory, num_splits, cached=False, map_cache=None):
     """
     Splits the reddit dataset by submission ID
 
@@ -48,7 +48,7 @@ def split_by_submission(reddit_directory, output_directory, num_splits, redis_di
     target_directories = create_split_directories(output_directory, num_splits)
     logger.debug("Target directories created.")
 
-    logger.debug("Configuring Redis database in: %s" % redis_dir)
+    logger.debug("Connecting to Redis database...")
     global redis_pool
     redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
     redis_db = get_redis_db(redis_pool)
@@ -228,7 +228,7 @@ def main():
         logger.debug("Output directory: %s" % output_directory)
 
     split_by_submission(input_directory, output_directory, args.num_splits,
-                        redis_dir=args.redis, cached=args.cached, map_cache=args.map_cache)
+                        cached=args.cached, map_cache=args.map_cache)
 
 
 if __name__ == "__main__":
