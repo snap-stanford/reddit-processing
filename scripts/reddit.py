@@ -144,7 +144,11 @@ def get_redis_db(redis_pool):
     if redis_db.info()['loading']:
         logger.debug("Waiting for Redis to load database")
     while redis_db.info()['loading']:
-        time.sleep(min(redis_db.info()['loading_eta_seconds'], 60))
+        try:
+            sleep_time = min(redis_db.info()['loading_eta_seconds'], 60)
+        except KeyError:
+            continue
+        time.sleep(sleep_time)
     return redis_db
 
 
