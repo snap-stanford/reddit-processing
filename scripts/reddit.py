@@ -1,7 +1,6 @@
 """
-File: reddit_utils
-
-Utility functions and definitions for processing the reddit data-set
+File: reddit.py
+Utility functions and definitions for processing the Reddit data-set
 
 Author: Jon Deaton
 Date: March 2018
@@ -155,7 +154,7 @@ def dump_dict_to_redis(redis_db, d, num_chunks=10):
             else:
                 chunk = {key: value for i, (key, value) in enumerate(d) if i % num_chunks == c}
             redis_db.mset(chunk)
-        return num_chunks  # return how many chunks it took... might be useful info for caller
+        return num_chunks  # return. how many chunks it took... might be useful info for caller
 
     except redis.exceptions.ConnectionError:
         logger.debug("Dumping in chunks of %d failed. Trying %d..." % (num_chunks, 2 * num_chunks))
