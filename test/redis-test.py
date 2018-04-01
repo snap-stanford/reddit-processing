@@ -9,9 +9,11 @@ import unittest
 import redis
 import multiprocessing as mp
 import string
+from reddit import *
 
 def add_kv(kv):
     add_redis(*kv)
+
 
 def add_redis(key, value):
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
@@ -54,6 +56,9 @@ class TestResis(unittest.TestCase):
         redis_db = redis.StrictRedis(connection_pool=redis_pool)
         for l in string.ascii_lowercase:
             self.assertEqual(redis_db.get(l), l.encode())
+
+    def test_group_get(self):
+        pass
 
 
 if __name__ == "__main__":

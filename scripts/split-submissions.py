@@ -52,7 +52,6 @@ def split_by_submission(reddit_directory, output_directory, num_splits, redis_di
     global redis_pool
     redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
-    redis_db.config_set('dir', redis_dir)  # Configure Redis database path
 
     if not cached:
         # The comment data must be loaded and read so that we have the mapping
@@ -70,10 +69,6 @@ def split_by_submission(reddit_directory, output_directory, num_splits, redis_di
 
     else:
         logger.debug("Redis Database cache exists. Skipping comment splitting.")
-
-
-    process = psutil.Process(os.getpid())
-    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
     # Now split the rest of the data while adding a column using the mapping that we have
     for data_set_name in ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]:
@@ -102,10 +97,6 @@ def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits):
         for table_fname in table_files
     ]
 
-    process = psutil.Process(os.getpid())
-    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
-
-    logger.debug("PID: %d, forking..." % process.pid)
     pool = mp.Pool(pool_size)
     pool.map(unpack_mapped_split_core, args_list)
 
@@ -132,9 +123,6 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
 
     logger.debug("Reading: %s" % table_file_name)
     df = pd.read_csv(table_file_path, engine='python')
-
-    process = psutil.Process(os.getpid())
-    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
     logger.debug("Mapping column \"%s\" from Redis..." % table_file_name)
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
@@ -194,7 +182,7 @@ def parse_args():
     io_options_group.add_argument('-in', "--input", help="Input directory")
     io_options_group.add_argument('-out', "--output", help="Output directory")
     io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
-    io_options_group.add_argument('-db', '--redis', help="Redis database directory")
+    # io_options_group.add_argument('-db', '--redis', help="Redis database directory")
     io_options_group.add_argument('--cached', action='store_true', help="Don't re-create the Redis cache")
     io_options_group.add_argument('--map-cache', help="Cache of mapping in pickled dictionaries")
 

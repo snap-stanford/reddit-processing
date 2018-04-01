@@ -132,7 +132,7 @@ def load_dict(fname):
         return pickle.load(f)
 
 
-def dump_dict_to_redis(redis_db, d, num_chunks=10):
+def dump_dict_to_redis(redis_db, d, num_chunks=10, retries=5):
     """
     Stores a dictionary in a redis database
 
@@ -157,11 +157,13 @@ def dump_dict_to_redis(redis_db, d, num_chunks=10):
         return num_chunks  # return. how many chunks it took... might be useful info for caller
 
     except redis.exceptions.ConnectionError:
+        if retries == 0:
+            raise
         logger.debug("Dumping in chunks of %d failed. Trying %d..." % (num_chunks, 2 * num_chunks))
-        return dump_dict_to_redis(redis_db, d, num_chunks=2 * num_chunks)
+        return dump_dict_to_redis(redis_db, d, num_chunks=2 * num_chunks, retries=retries - 1)
 
 
-def get_values_from_redis(redis_db, keys, num_chunks=10):
+def get_values_from_redis(redis_db, keys, num_chunks=10, retries=5):
     """
     Maps a list of keys to their values from a Redis database
 
@@ -181,8 +183,10 @@ def get_values_from_redis(redis_db, keys, num_chunks=10):
             for chunk in chunk_list(keys, num_chunks):
                 values.extend(redis_db.mget(chunk))
         except redis.exceptions.ConnectionError:
+            if retries == 0:
+                raise
             logger.debug("Dumping in chunks of %d failed. Trying %d..." % (num_chunks, 2 * num_chunks))
-            return get_values_from_redis(redis_db, keys, num_chunks=2 * num_chunks)
+            return get_values_from_redis(redis_db, keys, num_chunks=2 * num_chunks, retries=retries - 1)
 
 
 def split_file(on, file_path, targets, num_splits, map_columns=None, redis_pool=None):

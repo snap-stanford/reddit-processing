@@ -51,11 +51,10 @@ $PYTHON ./merge-reddit.py --users \
 
 
 echo "Running Submission Processing"
-redis-server --daemonize yes # Start the Redis database
+redis-server dir $REDIS_DIR --daemonize yes # Start the Redis database
 $PYTHON ./split-submissions.py --cached \
     --input $REDDIT \
     --output $SUBMISSIONS_SPLIT_DIR \
-    --redis $REDIS_DIR \
     --debug --log "$LOG/split_sub.log" || redis-cli shutdown && exit $?
 
 redis-cli shutdown & # shutdown the Redis database
