@@ -39,27 +39,27 @@ COMMENT_CACHE="$SCRATCH/comment_map_cache"
 
 
 echo "Running User Processing"
-$PYTHON ./split-users.py \
-    --input $REDDIT \
-    --output $USERS_SPLIT_DIR \
+"$PYTHON" ./split-users.py \
+    --input "$REDDIT" \
+    --output "$USERS_SPLIT_DIR" \
     --debug --log "$LOG/split_user.log"
 
-$PYTHON ./merge-reddit.py --users \
-    --input $USERS_SPLIT_DIR \
-    --output $USERS_OUTPUT \
+"$PYTHON" ./merge-reddit.py --users \
+    --input "$USERS_SPLIT_DIR" \
+    --output "$USERS_OUTPUT" \
     --debug --log "$LOG/merge_user.log"
 
 
 echo "Running Submission Processing"
-redis-server dir $REDIS_DIR --daemonize yes # Start the Redis database
-$PYTHON ./split-submissions.py --cached \
-    --input $REDDIT \
-    --output $SUBMISSIONS_SPLIT_DIR \
+redis-server --dir "$REDIS_DIR" --daemonize yes # Start the Redis database
+"$PYTHON" ./split-submissions.py --cached \
+    --input "$REDDIT" \
+    --output "$SUBMISSIONS_SPLIT_DIR" \
     --debug --log "$LOG/split_sub.log" || redis-cli shutdown && exit $?
 
 redis-cli shutdown & # shutdown the Redis database
 
-$PYTHON ./merge-reddit.py --submissions \
-    --input $SUBMISSIONS_SPLIT_DIR \
-    --output $SUBMISSIONS_OUTPUT \
+"$PYTHON" ./merge-reddit.py --submissions \
+    --input "$SUBMISSIONS_SPLIT_DIR" \
+    --output "$SUBMISSIONS_OUTPUT" \
     --debug --log "$LOG/merge_sub.log"

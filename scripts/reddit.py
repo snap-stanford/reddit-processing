@@ -15,6 +15,7 @@ import logging
 import pandas as pd
 import psutil
 import redis
+import time
 
 logger = logging.getLogger('root')
 python2 = sys.version_info < (3, 0)
@@ -130,6 +131,21 @@ def load_dict(fname):
     """
     with open(fname, 'rb') as f:
         return pickle.load(f)
+
+
+def get_redis_db(redis_pool):
+    """
+    Get a connection to a Redis database
+
+    :param redis_pool: Pool of connections to use to connect to
+    :return: Redis database (fully loaded)
+    """
+    redis_db = redis.StrictRedis(connection_pool=redis_pool)
+    if redis_db.info()['loading']:
+        logger.debug("Waiting for Redis to load database")
+    while redis_db.info()['loading']:
+        time.sleep(min(redis_db.info()['loading_eta_seconds'], 60))
+    return redis_db
 
 
 def dump_dict_to_redis(redis_db, d, num_chunks=10, retries=5):

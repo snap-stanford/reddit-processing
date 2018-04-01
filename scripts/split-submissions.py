@@ -51,7 +51,7 @@ def split_by_submission(reddit_directory, output_directory, num_splits, redis_di
     logger.debug("Configuring Redis database in: %s" % redis_dir)
     global redis_pool
     redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
-    redis_db = redis.StrictRedis(connection_pool=redis_pool)
+    redis_db = get_redis_db(redis_pool)
 
     if not cached:
         # The comment data must be loaded and read so that we have the mapping
@@ -125,7 +125,7 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     df = pd.read_csv(table_file_path, engine='python')
 
     logger.debug("Mapping column \"%s\" from Redis..." % table_file_name)
-    redis_db = redis.StrictRedis(connection_pool=redis_pool)
+    redis_db = get_redis_db(redis_pool)
     df[result_col] = get_values_from_redis(redis_db, df[mapped_col], num_chunks=1)
     df[result_col].fillna(df[mapped_col], inplace=True)
 
@@ -188,7 +188,7 @@ def parse_args():
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")
-    options_group.add_argument('-p', '--pool-size', type=int, default=32,    help="Thread-pool size")
+    options_group.add_argument('-p', '--pool-size', type=int, default=64,    help="Thread-pool size")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
