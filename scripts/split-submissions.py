@@ -68,12 +68,9 @@ def split_by_submission(reddit_directory, output_directory, num_splits, redis_di
         logger.debug("Loading dictionaries from cache into Redis...")
         load_dict_cache_into_db(map_cache)
 
-    else:  # No database cache, and no pickled dictionary cache
-        logger.info("No {comment --> submission} map cached.")
-        logger.info("Processing comment tables...")
-        split_data_set(reddit_directory, "stanford_comment_data", "post_fullname", num_splits, target_directories,
-                       redis_pool=redis_pool,
-                       map_columns=("comment_fullname", "post_fullname"))
+    else:
+        logger.debug("Redis Database cache exists. Skipping comment splitting.")
+
 
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
