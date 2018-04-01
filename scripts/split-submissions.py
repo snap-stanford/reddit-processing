@@ -32,14 +32,14 @@ def load_dict_cache_into_db(directory):
     pool.map(load_log, listdir(directory))
 
 
-def split_by_submission(reddit_directory, output_directory, num_splits, cache_dir=None, redis_dir="redis"):
+def split_by_submission(reddit_directory, output_directory, num_splits, redis_dir="redis", cached=False, map_cache=None):
     """
     Splits the reddit dataset by submission ID
 
     :param reddit_directory: The top level reddit directory
     :param output_directory: Output directory to write independent sub-datasets
     :param num_splits: The number of segments to split the data into
-    :param cache_dir: Directory to store a serialized dictionary of
+    :param cached: Directory to store a serialized dictionary of
     :param compress: Compress intermediate files (The output of this script)
     :return: None
     """
@@ -54,36 +54,43 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cache_di
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
     redis_db.config_set('dir', redis_dir)  # Configure Redis database path
 
-    if cache_dir is None or not os.path.isdir(cache_dir) or not os.listdir(cache_dir):  # Missing / empty directory
+    if not cached:
         # The comment data must be loaded and read so that we have the mapping
         # from comment full-name to base (submission) full-name, which is required for the splitting
         # of the other data sets
-        mkdir(cache_dir)
+        logger.info("No database of {comment --> submission} map cached.")
+        logger.info("Processing comment tables...")
+        split_data_set(reddit_directory, "stanford_comment_data", "post_fullname", num_splits, target_directories,
+                       redis_pool=redis_pool,
+                       map_columns=("comment_fullname", "post_fullname"))
+
+    elif map_cache is not None or not os.path.isdir(map_cache) or not os.listdir(map_cache):
+        logger.debug("Loading dictionaries from cache into Redis...")
+        load_dict_cache_into_db(map_cache)
+
+    else:  # No database cache, and no pickled dictionary cache
         logger.info("No {comment --> submission} map cached.")
         logger.info("Processing comment tables...")
         split_data_set(reddit_directory, "stanford_comment_data", "post_fullname", num_splits, target_directories,
                        redis_pool=redis_pool,
                        map_columns=("comment_fullname", "post_fullname"))
-    else:
-        # global comment_post_mapping  # stores map from comment fullname -> base submission id
-        logger.debug("Loading dicts from cache into Redis...")
-        load_dict_cache_into_db(cache_dir)
 
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
-
-    # Split the submission tables (they don't need to be mapped using the database
-    logger.info("Processing submission tables...")
-    split_data_set(reddit_directory, "stanford_submission_data", "post_fullname", num_splits, target_directories)
 
     # Now split the rest of the data while adding a column using the mapping that we have
     for data_set_name in ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]:
         mapped_split(reddit_directory, data_set_name, 'target_fullname', 'post_fullname', num_splits)
 
+    # Split the submission tables (they don't need to be mapped using the database)
+    logger.info("Processing submission tables...")
+    split_data_set(reddit_directory, "stanford_submission_data", "post_fullname", num_splits, target_directories)
+
 
 def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits):
     """
-    Splits a reddit dataset
+    Splits a reddit dataset with a column mapping
+
     :param reddit_dir: Top level reddit directory
     :param data_set_name: Name / sub-directory name of the data set to split
     :param mapped_col: The column which must be mapped to the split column
@@ -190,8 +197,9 @@ def parse_args():
     io_options_group.add_argument('-in', "--input", help="Input directory")
     io_options_group.add_argument('-out', "--output", help="Output directory")
     io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
-    io_options_group.add_argument('--cache', help="Submission mapping file cache")
     io_options_group.add_argument('-db', '--redis', help="Redis database directory")
+    io_options_group.add_argument('--cache', action='store_true', help="Don't re-create the Redis cache")
+    io_options_group.add_argument('--map-cache', help="Cache of mapping in pickled dictionaries")
 
     options_group = parser.add_argument_group("Options")
     options_group.add_argument('-n', '--num-splits', type=int, default=1024, help="Number of ways to split data set")
@@ -235,7 +243,7 @@ def main():
         logger.debug("Output directory: %s" % output_directory)
 
     split_by_submission(input_directory, output_directory, args.num_splits,
-                        cache_dir=args.cache)
+                        redis_dir=args.redis, cached=args.cache, map_cache=args.map_cache)
 
 
 if __name__ == "__main__":

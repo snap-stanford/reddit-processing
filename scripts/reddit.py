@@ -185,6 +185,7 @@ def get_values_from_redis(redis_db, keys, num_chunks=10):
             return get_values_from_redis(redis_db, keys, num_chunks=2 * num_chunks)
 
 
+@unpackable
 def split_file(on, file_path, targets, num_splits, map_columns=None, redis_pool=None):
     """
     Splits the rows of a data frame stored in a file on a specified column

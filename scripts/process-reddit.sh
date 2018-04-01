@@ -19,8 +19,7 @@ PYTHON=$(which python)
 ##################################################
 
 
-# Exit if error occurs
-set -e
+set -e # Exit if error occurs
 
 # Final output directories
 USERS_OUTPUT="$OUTPUT_DIRECTORY/user_merged"
@@ -30,6 +29,7 @@ SUBMISSIONS_OUTPUT="$OUTPUT_DIRECTORY/submission_merged"
 SCRATCH="$OUTPUT_DIRECTORY/scratch"
 USERS_SPLIT_DIR="$SCRATCH/user_split"
 SUBMISSIONS_SPLIT_DIR="$SCRATCH/submission_split"
+LOG="$SCRATCH/log" # directory to store logs in
 
 # Database to store comment --> base submission mapping (~100 GB)
 REDIS_DIR="$LFS_SCRATCH/redis"
@@ -38,10 +38,29 @@ REDIS_DIR="$LFS_SCRATCH/redis"
 COMMENT_CACHE="$SCRATCH/comment_map_cache"
 
 
-# Split and merge by user
-$PYTHON ./split-users.py --input $REDDIT --output $USERS_SPLIT_DIR --debug --log "$SCRATCH/log/split_user.log"
-$PYTHON ./merge-reddit.py --users --input $USERS_SPLIT_DIR --output $USERS_OUTPUT --debug --log "$SCRATCH/log/merge_user.log"
+echo "Running User Processing"
+$PYTHON ./split-users.py \
+    --input $REDDIT \
+    --output $USERS_SPLIT_DIR \
+    --debug --log "$LOG/split_user.log"
 
-# Split and merge by submission
-$PYTHON ./split-submissions.py --input $REDDIT --output $SUBMISSIONS_SPLIT_DIR --redis $REDIS_DIR --debug --log "$SCRATCH/log/split_sub.log"
-$PYTHON ./merge-reddit.py --submissions --input $SUBMISSIONS_SPLIT_DIR --output $SUBMISSIONS_OUTPUT --debug --log "$SCRATCH/log/merge_sub.log"
+$PYTHON ./merge-reddit.py --users \
+    --input $USERS_SPLIT_DIR \
+    --output $USERS_OUTPUT \
+    --debug --log "$LOG/merge_user.log"
+
+
+echo "Running Submission Processing"
+redis-server --daemonize yes # Start the Redis database
+$PYTHON ./split-submissions.py --cached \
+    --input $REDDIT \
+    --output $SUBMISSIONS_SPLIT_DIR \
+    --redis $REDIS_DIR \
+    --debug --log "$LOG/split_sub.log" || redis-cli shutdown && exit $?
+
+redis-cli shutdown & # shutdown the Redis database
+
+$PYTHON ./merge-reddit.py --submissions \
+    --input $SUBMISSIONS_SPLIT_DIR \
+    --output $SUBMISSIONS_OUTPUT \
+    --debug --log "$LOG/merge_sub.log"

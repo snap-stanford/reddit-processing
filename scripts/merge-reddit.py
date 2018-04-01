@@ -53,10 +53,10 @@ def merge_dataset(input_directory, output_directory, strategy, pool_size=16, seq
     else:
         pool = mp.Pool(pool_size)
         args_list = [(file, output_directory, strategy) for file in listdir(input_directory)]
-        pool.map(merge_dir_unpack, args_list)
+        pool.map(unpack_merge_data_subset, args_list)
 
 
-def merge_dir_unpack(args):
+def unpack_merge_data_subset(args):
     merge_data_subset(*args)
 
 
