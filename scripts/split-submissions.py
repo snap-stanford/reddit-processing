@@ -132,9 +132,9 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     process = psutil.Process(os.getpid())
     logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
 
-    logger.debug("Mapping column: %s" % table_file_name)
+    logger.debug("Mapping column \"%s\" from Redis..." % table_file_name)
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
-    df[result_col] = redis_db.mget(df[mapped_col])
+    df[result_col] = get_values_from_redis(redis_db, df[mapped_col], num_chunks=1)
     df[result_col].fillna(df[mapped_col], inplace=True)
 
     # Make a map of output files for each of the splits as well as creating the

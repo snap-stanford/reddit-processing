@@ -8,6 +8,7 @@ Date: March 2018
 """
 
 import os
+import sys
 import hashlib
 import pickle
 from enum import Enum
@@ -17,7 +18,7 @@ import psutil
 import redis
 
 logger = logging.getLogger('root')
-
+python2 = sys.version_info < (3, 0)
 
 class DataType(Enum):
     """
@@ -73,11 +74,13 @@ def mkdir(directory):
     :param directory: A path to a directory to create
     :return: None
     """
-    try:
-        os.mkdir(directory)
-    except:
-        pass
-    # os.makedirs(directory, exist_ok=True)
+    if python2:
+        os.makedirs(directory, exist_ok=True)
+    else:
+        try:
+            os.mkdir(directory)
+        except FileExistsError:
+            pass
 
 
 def hash(s):
@@ -88,6 +91,23 @@ def hash(s):
     :return: The hash of the string as an integer
     """
     return int(hashlib.md5(s.encode()).hexdigest(), 16)
+
+
+def chunk_list(l, num_chunks):
+    """
+    Chunks a list into contiguous regions
+
+    :param l: The list to chunk
+    :param num_chunks: The number of chunks to break the list up into
+    :return: A generator that returns each of the chunks (which are also generators)
+    """
+    def chunker(c):
+        for i, key, in enumerate(l):
+            if int(i * num_chunks / len(l)) == c:
+                yield key
+
+    for c in range(num_chunks):
+        yield chunker(c)
 
 
 def save_dict(d, fname):
@@ -113,27 +133,57 @@ def load_dict(fname):
         return pickle.load(f)
 
 
-def dump_dict_to_redis(redis_db, d, chunks=10):
+def dump_dict_to_redis(redis_db, d, num_chunks=10):
     """
     Stores a dictionary in a redis database
 
-    :param redis_db: The redis database to store the dictionary in
-    :param d: The dictionary to store in the database
-    :param chunks: The number of chunks to split the dictionary into in order
+    This function will dump a (potentially large) dictionary or list of key-value pairs into
+    the specified Redis database. This is accomplished by breaking up the dictionary into a
+    number of chunks and using MSET in order to dump many key-value pairs at the same time.
+    If the chunks are too large, then the connection will be reset by the database and
+    this function will re-try while breaking up the dictionary into smaller chunks instead.
+    :param redis_db: The redis database to dump the dictionary into
+    :param d: Dictionary or key-value pair iterator to dump into the Redis database
+    :param num_chunks: The number of chunks to split the dictionary into in order
     to store it in the database
     :return: None
     """
     try:
-        for c in range(chunks):
+        for c in range(num_chunks):
             if type(d) is dict:
-                chunk = {key: value for i, (key, value) in enumerate(d.items()) if i % chunks == c}
+                chunk = {key: value for i, (key, value) in enumerate(d.items()) if i % num_chunks == c}
             else:
-                chunk = {key: value for i, (key, value) in enumerate(d) if i % chunks == c}
+                chunk = {key: value for i, (key, value) in enumerate(d) if i % num_chunks == c}
             redis_db.mset(chunk)
+        return num_chunks  # return how many chunks it took... might be useful info for caller
 
     except redis.exceptions.ConnectionError:
-        logger.debug("Dumping in chunks of %d failed. Trying %d..." % (chunks, 2*chunks))
-        dump_dict_to_redis(redis_db, d, chunks=2*chunks)
+        logger.debug("Dumping in chunks of %d failed. Trying %d..." % (num_chunks, 2 * num_chunks))
+        return dump_dict_to_redis(redis_db, d, num_chunks=2 * num_chunks)
+
+
+def get_values_from_redis(redis_db, keys, num_chunks=10):
+    """
+    Maps a list of keys to their values from a Redis database
+
+    :param redis_db: The Redis database to extract the values from
+    :param keys: The keys to get the values for
+    :param num_chunks: The number of chunks to split the key list into
+    :return: List of values found in the Redis database
+    """
+    if num_chunks == 1:
+        try:
+            return redis_db.mget(keys)
+        except redis.exceptions.ConnectionError:
+            return get_values_from_redis(redis_db, keys)
+    else:
+        try:
+            values = []
+            for chunk in chunk_list(keys, num_chunks):
+                values.extend(redis_db.mget(chunk))
+        except redis.exceptions.ConnectionError:
+            logger.debug("Dumping in chunks of %d failed. Trying %d..." % (num_chunks, 2 * num_chunks))
+            return get_values_from_redis(redis_db, keys, num_chunks=2 * num_chunks)
 
 
 def split_file(on, file_path, targets, num_splits, map_columns=None, redis_pool=None):
@@ -162,9 +212,8 @@ def split_file(on, file_path, targets, num_splits, map_columns=None, redis_pool=
     if (map_columns is None) != (redis_pool is None):
         raise ValueError("Neither or both of map_columns and maps_dir must be passed.")
     if map_columns is not None and redis_pool is not None:  # Need to pass both
-        logger.debug("Mapping col. %s of %s" % (map_columns[0], file_name))
+        logger.debug("Dumping col. map \"%s\" to Redis: %s" % (map_columns[0], file_name))
         redis_db = redis.StrictRedis(connection_pool=redis_pool)
-        logger.debug("Dumping %s into Redis" % file_name)
         dump_dict_to_redis(redis_db, zip(df[map_columns[0]], df[map_columns[1]]))
 
 
