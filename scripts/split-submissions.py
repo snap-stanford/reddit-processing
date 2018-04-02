@@ -51,7 +51,6 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cached=F
     logger.debug("Connecting to Redis database...")
     global redis_pool
     redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
-    redis_db = get_redis_db(redis_pool)
 
     if not cached:
         # The comment data must be loaded and read so that we have the mapping
@@ -169,7 +168,7 @@ def unpack_split_file_with_map(args):
     split_file_with_map(*args)
 
 
-def split_file_with_map(on, file_path, targets, num_splits, map_columns):
+def split_file_with_map(on, file_path, targets, num_splits, map_columns=None):
     """
     Splits the rows of a data frame stored in a file on a specified column
 
@@ -190,10 +189,10 @@ def split_file_with_map(on, file_path, targets, num_splits, map_columns):
     file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
     split_data_frame(df, on, lambda x: hash(x) % num_splits, file_targets)
 
-    logger.debug("Dumping col. map \"%s\" to Redis: %s" % (map_columns[0], file_name))
-    redis_db = redis.StrictRedis(connection_pool=redis_pool)
-    dump_dict_to_redis(redis_db, zip(df[map_columns[0]], df[map_columns[1]]))
-
+    if map_columns is not None:
+        logger.debug("Dumping col. map \"%s\" to Redis: %s" % (map_columns[0], file_name))
+        redis_db = redis.StrictRedis(connection_pool=redis_pool)
+        dump_dict_to_redis(redis_db, zip(df[map_columns[0]], df[map_columns[1]]))
 
 
 def parse_args():

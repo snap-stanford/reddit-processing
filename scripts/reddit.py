@@ -152,7 +152,7 @@ def get_redis_db(redis_pool):
     return redis_db
 
 
-def dump_dict_to_redis(redis_db, d, num_chunks=10, retries=5):
+def dump_dict_to_redis(redis_db, d, num_chunks=7, retries=5):
     """
     Stores a dictionary in a redis database
 
@@ -167,6 +167,14 @@ def dump_dict_to_redis(redis_db, d, num_chunks=10, retries=5):
     to store it in the database
     :return: None
     """
+
+    if num_chunks == 1:
+        try:
+            redis_db.mset(d)
+            return 1
+        except redis.exceptions.ConnectionError:
+            return dump_dict_to_redis(redis_db, d, num_chunks=10)
+
     try:
         for c in range(num_chunks):
             if type(d) is dict:
@@ -183,7 +191,7 @@ def dump_dict_to_redis(redis_db, d, num_chunks=10, retries=5):
         return dump_dict_to_redis(redis_db, d, num_chunks=2 * num_chunks, retries=retries - 1)
 
 
-def get_values_from_redis(redis_db, keys, num_chunks=10, retries=5):
+def get_values_from_redis(redis_db, keys, num_chunks=7, retries=5):
     """
     Maps a list of keys to their values from a Redis database
 

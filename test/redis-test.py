@@ -57,9 +57,6 @@ class TestResis(unittest.TestCase):
         for l in string.ascii_lowercase:
             self.assertEqual(redis_db.get(l), l.encode())
 
-    def test_group_get(self):
-        pass
-
 
 if __name__ == "__main__":
     unittest.main()
