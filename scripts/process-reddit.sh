@@ -37,7 +37,7 @@ REDIS_DIR="$LFS_SCRATCH/redis"
 # Cache to store comment --> base submission mapping (~41 GB)
 COMMENT_CACHE="$SCRATCH/comment_map_cache"
 
-
+: '
 echo "Running User Processing"
 "$PYTHON" ./split-users.py \
     --input "$REDDIT" \
@@ -48,7 +48,7 @@ echo "Running User Processing"
     --input "$USERS_SPLIT_DIR" \
     --output "$USERS_OUTPUT" \
     --debug --log "$LOG/merge_user.log"
-
+'
 
 echo "Running Submission Processing"
 redis-server --dir "$REDIS_DIR" --daemonize yes # Start the Redis database

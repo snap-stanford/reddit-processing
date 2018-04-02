@@ -60,7 +60,6 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cached=F
         logger.info("No database of {comment --> submission} map cached.")
         logger.info("Processing comment tables...")
         split_data_set(reddit_directory, "stanford_comment_data", "post_fullname", num_splits, target_directories,
-                       redis_pool=redis_pool,
                        map_columns=("comment_fullname", "post_fullname"))
 
     elif map_cache is not None and os.path.isdir(map_cache) and os.listdir(map_cache):
@@ -118,9 +117,7 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     :return: None
     """
 
-    logger.info("Processing: %s" % data_set_name)
     table_file_path = os.path.join(reddit_path, data_set_name, table_file_name)
-
     logger.debug("Reading: %s" % table_file_name)
     df = pd.read_csv(table_file_path, engine='python')
 
@@ -141,8 +138,7 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     split_data_frame(df, result_col, lambda s: hash(s) % num_splits, output_file_map)
 
 
-def split_data_set(reddit_path, data_set_name, on, num_splits, target_directories,
-                   map_columns=None, redis_pool=None):
+def split_data_set(reddit_path, data_set_name, on, num_splits, target_directories, map_columns=None):
     """
     Splits a Reddit Dataset
 
@@ -163,10 +159,41 @@ def split_data_set(reddit_path, data_set_name, on, num_splits, target_directorie
 
     full_sub_data_path = os.path.join(reddit_path, data_set_name)
     data_files = map(lambda f: os.path.join(full_sub_data_path, f), os.listdir(full_sub_data_path))
-    args_list = [(on, table_file, targets, num_splits, map_columns, redis_pool) for table_file in data_files]
+    args_list = [(on, table_file, targets, num_splits, map_columns) for table_file in data_files]
 
     pool = mp.Pool(pool_size)
-    pool.map(unpack_split_file, args_list)
+    pool.map(unpack_split_file_with_map, args_list)
+
+
+def unpack_split_file_with_map(args):
+    split_file_with_map(*args)
+
+
+def split_file_with_map(on, file_path, targets, num_splits, map_columns):
+    """
+    Splits the rows of a data frame stored in a file on a specified column
+
+    :param on: The column of the data frame to split the input on
+    :param file_path: Path to the file containing the data frame (in CSV)
+    :param targets:
+    :param num_splits: The number of buckets to split the data frame up into
+    :param map_columns: A tuple specifying two columns of the data frame that need to be
+    zipped together into a python dictionary and saved to file. Must pass maps_dir as well.
+    :param redis_pool: Pool of redis database connections to dup the mapping into
+    :return: None
+    """
+    file_name = os.path.split(file_path)[1]
+    logger.debug("Reading: %s" % file_name)
+    df = pd.read_csv(file_path)
+
+    logger.debug("Splitting: %s" % file_name)
+    file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
+    split_data_frame(df, on, lambda x: hash(x) % num_splits, file_targets)
+
+    logger.debug("Dumping col. map \"%s\" to Redis: %s" % (map_columns[0], file_name))
+    redis_db = redis.StrictRedis(connection_pool=redis_pool)
+    dump_dict_to_redis(redis_db, zip(df[map_columns[0]], df[map_columns[1]]))
+
 
 
 def parse_args():

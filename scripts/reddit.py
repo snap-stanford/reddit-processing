@@ -209,7 +209,7 @@ def get_values_from_redis(redis_db, keys, num_chunks=10, retries=5):
             return get_values_from_redis(redis_db, keys, num_chunks=2 * num_chunks, retries=retries - 1)
 
 
-def split_file(on, file_path, targets, num_splits, map_columns=None, redis_pool=None):
+def split_file(on, file_path, targets, num_splits):
     """
     Splits the rows of a data frame stored in a file on a specified column
 
@@ -226,18 +226,9 @@ def split_file(on, file_path, targets, num_splits, map_columns=None, redis_pool=
     logger.debug("Reading: %s" % file_name)
     df = pd.read_csv(file_path)
 
-    process = psutil.Process(os.getpid())
-    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
-
     logger.debug("Splitting: %s" % file_name)
     file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
     split_data_frame(df, on, lambda x: hash(x) % num_splits, file_targets)
-    if (map_columns is None) != (redis_pool is None):
-        raise ValueError("Neither or both of map_columns and maps_dir must be passed.")
-    if map_columns is not None and redis_pool is not None:  # Need to pass both
-        logger.debug("Dumping col. map \"%s\" to Redis: %s" % (map_columns[0], file_name))
-        redis_db = redis.StrictRedis(connection_pool=redis_pool)
-        dump_dict_to_redis(redis_db, zip(df[map_columns[0]], df[map_columns[1]]))
 
 
 def unpack_split_file(args):
