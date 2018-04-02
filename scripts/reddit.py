@@ -177,10 +177,7 @@ def dump_dict_to_redis(redis_db, d, num_chunks=7, retries=5):
 
     try:
         for c in range(num_chunks):
-            if type(d) is dict:
-                chunk = {key: value for i, (key, value) in enumerate(d.items()) if i % num_chunks == c}
-            else:
-                chunk = {key: value for i, (key, value) in enumerate(d) if i % num_chunks == c}
+            chunk = {key: value for i, (key, value) in enumerate(d.items()) if i % num_chunks == c}
             redis_db.mset(chunk)
         return num_chunks  # return. how many chunks it took... might be useful info for caller
 

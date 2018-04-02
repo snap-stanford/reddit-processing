@@ -192,7 +192,8 @@ def split_file_with_map(on, file_path, targets, num_splits, map_columns=None):
     if map_columns is not None:
         logger.debug("Dumping col. map \"%s\" to Redis: %s" % (map_columns[0], file_name))
         redis_db = redis.StrictRedis(connection_pool=redis_pool)
-        dump_dict_to_redis(redis_db, zip(df[map_columns[0]], df[map_columns[1]]))
+        d = dict(zip(df[map_columns[0]], df[map_columns[1]]))
+        dump_dict_to_redis(redis_db, d)
 
 
 def parse_args():
