@@ -142,7 +142,7 @@ def get_redis_db(redis_pool):
     """
     redis_db = redis.StrictRedis(connection_pool=redis_pool)
     if redis_db.info()['loading']:
-        logger.debug("Waiting for Redis to load database")
+        logger.debug("Waiting for Redis to load database. ETA: %d min" % (redis_db.info()['loading_eta_seconds'] / 60))
     while redis_db.info()['loading']:
         try:
             sleep_time = min(redis_db.info()['loading_eta_seconds'], 60)

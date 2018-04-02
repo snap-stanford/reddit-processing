@@ -52,7 +52,7 @@ echo "Running User Processing"
 
 echo "Running Submission Processing"
 redis-server --dir "$REDIS_DIR" --daemonize yes # Start the Redis database
-"$PYTHON" ./split-submissions.py --cached \
+"$PYTHON" ./split-submissions.py \
     --input "$REDDIT" \
     --output "$SUBMISSIONS_SPLIT_DIR" \
     --debug --log "$LOG/split_sub.log" || redis-cli shutdown && exit $?

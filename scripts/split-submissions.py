@@ -182,7 +182,6 @@ def parse_args():
     io_options_group.add_argument('-in', "--input", help="Input directory")
     io_options_group.add_argument('-out', "--output", help="Output directory")
     io_options_group.add_argument('-c', '--compress', action='store_true', help='Compress output')
-    # io_options_group.add_argument('-db', '--redis', help="Redis database directory")
     io_options_group.add_argument('--cached', action='store_true', help="Don't re-create the Redis cache")
     io_options_group.add_argument('--map-cache', help="Cache of mapping in pickled dictionaries")
 
