@@ -101,6 +101,8 @@ def chunk_list(l, num_chunks):
     :param num_chunks: The number of chunks to break the list up into
     :return: A generator that returns each of the chunks (which are also generators)
     """
+    l = list(l)
+
     def chunker(c):
         for i, key, in enumerate(l):
             if int(i * num_chunks / len(l)) == c:
@@ -199,7 +201,7 @@ def get_values_from_redis(redis_db, keys, num_chunks=7, retries=5):
     """
     if num_chunks == 1:
         try:
-            if keys:
+            if len(keys) > 0:
                 return redis_db.mget(keys)
             else:
                 return []
