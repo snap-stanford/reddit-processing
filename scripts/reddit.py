@@ -83,14 +83,14 @@ def mkdir(directory):
             pass
 
 
-def hash(s):
-    """
-    Hash a string
-
-    :param s: A string to hash
-    :return: The hash of the string as an integer
-    """
-    return int(hashlib.md5(s.encode()).hexdigest(), 16)
+# def hash(s):
+#     """
+#     Hash a string
+#
+#     :param s: A string to hash
+#     :return: The hash of the string as an integer
+#     """
+#     return int(hashlib.md5(s.encode()).hexdigest(), 16)
 
 
 def chunk_list(l, num_chunks):
@@ -219,7 +219,6 @@ def get_values_from_redis(redis_db, keys, num_chunks=7, retries=5):
             if retries == 0:
                 raise
             return get_values_from_redis(redis_db, keys, num_chunks=2 * num_chunks, retries=retries - 1)
-
 
 
 def split_file(on, file_path, targets, num_splits):
