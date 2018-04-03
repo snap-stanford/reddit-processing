@@ -203,7 +203,10 @@ def get_values_from_redis(redis_db, keys, num_chunks=7, retries=5):
     """
 
     def transform(v):
-        return map(lambda x: str(x, 'utf-8') if x else None, v)
+        return list(map(lambda x: str(x, 'utf-8') if x else None, v))
+
+    if type(keys) is not list:
+        keys = list(keys)
 
     if num_chunks == 1:
         try:
