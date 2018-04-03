@@ -14,6 +14,7 @@ import multiprocessing as mp
 import pandas as pd
 import psutil
 import progressbar
+import random
 
 from reddit import *
 import redis
@@ -189,15 +190,25 @@ def split_file_with_map(on, file_path, targets, num_splits, map_columns=None):
     logger.debug("Loading: %s" % file_name)
     df = pd.read_csv(file_path)
 
-    logger.debug("Splitting: %s" % file_name)
-    file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
-    split_data_frame(df, on, lambda x: hash(x) % num_splits, file_targets)
+    def split():
+        logger.debug("Splitting: %s" % file_name)
+        file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
+        split_data_frame(df, on, lambda x: hash(x) % num_splits, file_targets)
 
-    if map_columns is not None:
-        logger.debug("Dumping col. map \"%s\" to Redis: %s" % (map_columns[0], file_name))
-        redis_db = redis.StrictRedis(connection_pool=redis_pool)
-        d = dict(zip(df[map_columns[0]], df[map_columns[1]]))
-        dump_dict_to_redis(redis_db, d)
+    def dump():
+        if map_columns is not None:
+            logger.debug("Dumping col. map \"%s\" to Redis: %s" % (map_columns[0], file_name))
+            redis_db = redis.StrictRedis(connection_pool=redis_pool)
+            d = dict(zip(df[map_columns[0]], df[map_columns[1]]))
+            dump_dict_to_redis(redis_db, d)
+
+    # do these two tasks in a random order for load-balancing
+    if random.randint() % 2:
+        split()
+        dump()
+    else:
+        dump()
+        split()
 
 
 def parse_args():
