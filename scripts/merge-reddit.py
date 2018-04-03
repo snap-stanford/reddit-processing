@@ -49,7 +49,7 @@ def merge_dataset(input_directory, output_directory, strategy, pool_size=16, seq
     """
     if sequential:
         for sub_dir in listdir(input_directory):
-            merge_data_subset(sub_dir)
+            merge_data_subset(sub_dir, output_directory, strategy)
     else:
         pool = mp.Pool(pool_size)
         args_list = [(file, output_directory, strategy) for file in listdir(input_directory)]

@@ -83,14 +83,14 @@ def mkdir(directory):
             pass
 
 
-# def hash(s):
-#     """
-#     Hash a string
-#
-#     :param s: A string to hash
-#     :return: The hash of the string as an integer
-#     """
-#     return int(hashlib.md5(s.encode()).hexdigest(), 16)
+def hash(s):
+    """
+    Hash a string
+
+    :param s: A string to hash
+    :return: The hash of the string as an integer
+    """
+    return int(hashlib.md5(s.encode()).hexdigest(), 16)
 
 
 def chunk_list(l, num_chunks):
@@ -101,7 +101,9 @@ def chunk_list(l, num_chunks):
     :param num_chunks: The number of chunks to break the list up into
     :return: A generator that returns each of the chunks (which are also generators)
     """
-    l = list(l)
+
+    if type(l) is not list:
+        l = list(l)
 
     def chunker(c):
         for i, key, in enumerate(l):
@@ -199,10 +201,15 @@ def get_values_from_redis(redis_db, keys, num_chunks=7, retries=5):
     :param num_chunks: The number of chunks to split the key list into
     :return: List of values found in the Redis database
     """
+
+    def transform(v):
+        return map(lambda x: str(x, 'utf-8') if x else None, v)
+
     if num_chunks == 1:
         try:
             if len(keys) > 0:
-                return redis_db.mget(keys)
+                values = redis_db.mget(keys)
+                return transform(values)
             else:
                 return []
         except redis.exceptions.ConnectionError:
@@ -214,7 +221,7 @@ def get_values_from_redis(redis_db, keys, num_chunks=7, retries=5):
                 c = list(chunk)
                 if c:
                     values.extend(redis_db.mget(c))
-            return values
+            return transform(values)
         except redis.exceptions.ConnectionError:
             if retries == 0:
                 raise
