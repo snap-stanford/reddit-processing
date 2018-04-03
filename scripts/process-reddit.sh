@@ -37,6 +37,8 @@ REDIS_DIR="$SCRATCH/redis"
 # Cache to store comment --> base submission mapping (~41 GB)
 COMMENT_CACHE="$SCRATCH/comment_map_cache"
 
+mkdir -p $REDIS_DIR
+
 : '
 echo "Running User Processing"
 "$PYTHON" ./split-users.py \
