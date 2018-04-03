@@ -199,19 +199,25 @@ def get_values_from_redis(redis_db, keys, num_chunks=7, retries=5):
     """
     if num_chunks == 1:
         try:
-            return redis_db.mget(keys)
+            if keys:
+                return redis_db.mget(keys)
+            else:
+                return []
         except redis.exceptions.ConnectionError:
             return get_values_from_redis(redis_db, keys)
     else:
         try:
             values = []
             for chunk in chunk_list(keys, num_chunks):
-                values.extend(redis_db.mget(chunk))
+                c = list(chunk)
+                if c:
+                    values.extend(redis_db.mget(c))
+            return values
         except redis.exceptions.ConnectionError:
             if retries == 0:
                 raise
-            logger.debug("Dumping in chunks of %d failed. Trying %d..." % (num_chunks, 2 * num_chunks))
             return get_values_from_redis(redis_db, keys, num_chunks=2 * num_chunks, retries=retries - 1)
+
 
 
 def split_file(on, file_path, targets, num_splits):

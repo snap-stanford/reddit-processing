@@ -126,7 +126,6 @@ def aggregate_dataframes(directory):
             return pd.read_csv(file, compression='infer')
         except UnicodeDecodeError:
             return pd.read_csv(file, compression='gzip')
-
     return pd.concat(map(read, listdir(directory)))
 
 

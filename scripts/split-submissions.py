@@ -68,6 +68,9 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cached=F
     else:
         logger.debug("Redis Database cache exists. Skipping comment splitting.")
 
+    redis_db = redis.StrictRedis(connection_pool=redis_pool)
+    logger.debug("Redis database has: %d keys" % redis_db.info()['db0']['keys'])
+
     # Now split the rest of the data while adding a column using the mapping that we have
     for data_set_name in ["stanford_report_data", "stanford_removal_data", "stanford_vote_data"]:
         mapped_split(reddit_directory, data_set_name, 'target_fullname', 'post_fullname', num_splits)
@@ -77,11 +80,12 @@ def split_by_submission(reddit_directory, output_directory, num_splits, cached=F
     split_data_set(reddit_directory, "stanford_submission_data", "post_fullname", num_splits, target_directories)
 
 
-def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits):
+def mapped_split(reddit_directory, data_set_name, mapped_col, result_col, num_splits):
     """
-    Splits a reddit dataset with a column mapping
+    Splits a Reddit dataset on a column after retrieving that column from the
+    Redis database
 
-    :param reddit_dir: Top level reddit directory
+    :param reddit_directory: Top level reddit directory
     :param data_set_name: Name / sub-directory name of the data set to split
     :param mapped_col: The column which must be mapped to the split column
     :param result_col: The column that the "mapped_col" is mapped to, and then split on
@@ -89,9 +93,9 @@ def mapped_split(reddit_dir, data_set_name, mapped_col, result_col, num_splits):
     :return: None
     """
 
-    table_files = os.listdir(os.path.join(reddit_dir, data_set_name))
+    table_files = os.listdir(os.path.join(reddit_directory, data_set_name))
     args_list = [
-        (reddit_dir, data_set_name, table_fname, mapped_col, result_col, num_splits)
+        (reddit_directory, data_set_name, table_fname, mapped_col, result_col, num_splits)
         for table_fname in table_files
     ]
 
@@ -103,24 +107,24 @@ def unpack_mapped_split_core(args):
     mapped_split_core(*args)
 
 
-def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, result_col, num_splits):
+def mapped_split_core(reddit_directory, data_set_name, table_fname, mapped_col, result_col, num_splits):
     """
     Core routine of the mapped_split routine.
     Splits a single table file
-    :param reddit_path: Top level reddit path
+    :param reddit_directory: Top level reddit path
     :param data_set_name: Name of the data set being split
-    :param table_file_name: Name of the table file
+    :param table_fname: Name of the table file
     :param mapped_col: Column that is mapped to result_col and then split on
     :param result_col: Column that mapped_col is mapped to. Data is split on this column's value
     :param num_splits: Number of ways to split the file
     :return: None
     """
 
-    table_file_path = os.path.join(reddit_path, data_set_name, table_file_name)
-    logger.debug("Reading: %s" % table_file_name)
+    table_file_path = os.path.join(reddit_directory, data_set_name, table_fname)
+    logger.debug("Loading: %s" % table_fname)
     df = pd.read_csv(table_file_path, engine='python')
 
-    logger.debug("Mapping column \"%s\" from Redis..." % table_file_name)
+    logger.debug("Mapping column \"%s\" from Redis ..." % mapped_col)
     redis_db = get_redis_db(redis_pool)
     df[result_col] = get_values_from_redis(redis_db, df[mapped_col], num_chunks=1)
     df[result_col].fillna(df[mapped_col], inplace=True)
@@ -131,9 +135,9 @@ def mapped_split_core(reddit_path, data_set_name, table_file_name, mapped_col, r
     for i in target_directories:
         target_sub_dir = os.path.join(target_directories[i], data_set_name)
         mkdir(target_sub_dir)
-        output_file_map[i] = os.path.join(target_sub_dir, table_file_name)
+        output_file_map[i] = os.path.join(target_sub_dir, table_fname)
 
-    logger.debug("Splitting: %s" % table_file_name)
+    logger.debug("Splitting: %s" % table_fname)
     split_data_frame(df, result_col, lambda s: hash(s) % num_splits, output_file_map)
 
 
@@ -182,7 +186,7 @@ def split_file_with_map(on, file_path, targets, num_splits, map_columns=None):
     :return: None
     """
     file_name = os.path.split(file_path)[1]
-    logger.debug("Reading: %s" % file_name)
+    logger.debug("Loading: %s" % file_name)
     df = pd.read_csv(file_path)
 
     logger.debug("Splitting: %s" % file_name)
