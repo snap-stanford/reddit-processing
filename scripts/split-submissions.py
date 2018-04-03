@@ -203,7 +203,7 @@ def split_file_with_map(on, file_path, targets, num_splits, map_columns=None):
             dump_dict_to_redis(redis_db, d)
 
     # do these two tasks in a random order for load-balancing
-    if random.randint() % 2:
+    if random.randint(0, 1):
         split()
         dump()
     else:
