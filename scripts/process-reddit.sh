@@ -15,6 +15,7 @@ REDDIT="/dfs/dataset/infolab/20180122-Reddit/data"
 OUTPUT_DIRECTORY="/dfs/scratch2/jdeaton/reddit/reddit_processed"
 LFS_SCRATCH="/lfs/local/0/jdeaton"
 PYTHON=$(which python)
+POOL_SIZE=64
 
 ##################################################
 
@@ -44,11 +45,13 @@ echo "Running User Processing"
 "$PYTHON" ./split-users.py \
     --input "$REDDIT" \
     --output "$USERS_SPLIT_DIR" \
+    --pool-size "$POOL_SIZE" \
     --debug --log "$LOG/split_user.log"
 
 "$PYTHON" ./merge-reddit.py --users \
     --input "$USERS_SPLIT_DIR" \
     --output "$USERS_OUTPUT" \
+    --pool-size "$POOL_SIZE" \
     --debug --log "$LOG/merge_user.log"
 '
 
@@ -57,6 +60,7 @@ redis-server --dir "$REDIS_DIR" --daemonize yes # Start the Redis database
 "$PYTHON" ./split-submissions.py \
     --input "$REDDIT" \
     --output "$SUBMISSIONS_SPLIT_DIR" \
+    --pool-size "$POOL_SIZE" \
     --debug --log "$LOG/split_sub.log" || echo "Failed. Redis DB still running..." && exit $?
 
 redis-cli shutdown & # shutdown the Redis database
@@ -64,4 +68,5 @@ redis-cli shutdown & # shutdown the Redis database
 "$PYTHON" ./merge-reddit.py --submissions \
     --input "$SUBMISSIONS_SPLIT_DIR" \
     --output "$SUBMISSIONS_OUTPUT" \
+    --pool-size "$POOL_SIZE" \
     --debug --log "$LOG/merge_sub.log"
