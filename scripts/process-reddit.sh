@@ -55,7 +55,7 @@ redis-server --dir "$REDIS_DIR" --daemonize yes # Start the Redis database
 "$PYTHON" ./split-submissions.py --cached \
     --input "$REDDIT" \
     --output "$SUBMISSIONS_SPLIT_DIR" \
-    --debug --log "$LOG/split_sub.log" || redis-cli shutdown && exit $?
+    --debug --log "$LOG/split_sub.log" || echo "Failed. Redis DB still running..." && exit $?
 
 redis-cli shutdown & # shutdown the Redis database
 
