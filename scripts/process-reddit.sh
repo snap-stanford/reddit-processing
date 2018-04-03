@@ -26,13 +26,13 @@ USERS_OUTPUT="$OUTPUT_DIRECTORY/user_merged"
 SUBMISSIONS_OUTPUT="$OUTPUT_DIRECTORY/submission_merged"
 
 # Scratch directories for storing intermediate results and database
-SCRATCH="$OUTPUT_DIRECTORY/scratch"
+SCRATCH="$LFS_SCRATCH/reddit_scratch"
 USERS_SPLIT_DIR="$SCRATCH/user_split"
 SUBMISSIONS_SPLIT_DIR="$SCRATCH/submission_split"
 LOG="$SCRATCH/log" # directory to store logs in
 
 # Database to store comment --> base submission mapping (~100 GB)
-REDIS_DIR="$LFS_SCRATCH/redis"
+REDIS_DIR="$SCRATCH/redis"
 
 # Cache to store comment --> base submission mapping (~41 GB)
 COMMENT_CACHE="$SCRATCH/comment_map_cache"
