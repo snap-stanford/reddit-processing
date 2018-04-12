@@ -52,6 +52,8 @@ def merge_dataset(input_directory, output_directory, strategy, split_range=None,
     if split_range is not None:
         directories = [d for d in directories if get_split_number(d) in range(split_range)]
 
+    logger.info("Merging a total of %d independent sub-directories." % len(directories))
+
     if sequential:
         for sub_dir in directories:
             merge_data_subset(sub_dir, output_directory, strategy)
