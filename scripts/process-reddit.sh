@@ -15,7 +15,7 @@ REDDIT="/dfs/dataset/infolab/20180122-Reddit/data"
 OUTPUT_DIRECTORY="/dfs/scratch2/jdeaton/reddit/reddit_processed"
 LFS_SCRATCH="/lfs/local/0/jdeaton"
 PYTHON=$(which python)
-POOL_SIZE=64
+POOL_SIZE=128
 
 ##################################################
 
@@ -27,7 +27,7 @@ USERS_OUTPUT="$OUTPUT_DIRECTORY/user_merged"
 SUBMISSIONS_OUTPUT="$OUTPUT_DIRECTORY/submission_merged"
 
 # Scratch directories for storing intermediate results and database
-SCRATCH="$LFS_SCRATCH/reddit_scratch"
+SCRATCH="$OUTPUT_DIRECTORY/scratch"
 USERS_SPLIT_DIR="$SCRATCH/user_split"
 SUBMISSIONS_SPLIT_DIR="$SCRATCH/submission_split"
 LOG="$SCRATCH/log" # directory to store logs in
@@ -56,6 +56,7 @@ echo "Running User Processing"
 '
 
 echo "Running Submission Processing"
+: '
 redis-server --dir "$REDIS_DIR" --daemonize yes # Start the Redis database
 "$PYTHON" ./split-submissions.py \
     --input "$REDDIT" \
@@ -64,6 +65,7 @@ redis-server --dir "$REDIS_DIR" --daemonize yes # Start the Redis database
     --debug --log "$LOG/split_sub.log" || echo "Failed. Redis DB still running..." && exit $?
 
 redis-cli shutdown & # shutdown the Redis database
+'
 
 "$PYTHON" ./merge-reddit.py --submissions \
     --input "$SUBMISSIONS_SPLIT_DIR" \
