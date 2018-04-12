@@ -41,13 +41,16 @@ COMMENT_CACHE="$SCRATCH/comment_map_cache"
 mkdir -p $REDIS_DIR
 
 : '
-echo "Running User Processing"
+echo
+echo "Running User Splitting"
 "$PYTHON" ./split-users.py \
     --input "$REDDIT" \
     --output "$USERS_SPLIT_DIR" \
     --pool-size "$POOL_SIZE" \
     --debug --log "$LOG/split_user.log"
 
+echo
+echo "Running User Splitting"
 "$PYTHON" ./merge-reddit.py --users \
     --input "$USERS_SPLIT_DIR" \
     --output "$USERS_OUTPUT" \
@@ -55,8 +58,9 @@ echo "Running User Processing"
     --debug --log "$LOG/merge_user.log"
 '
 
-echo "Running Submission Processing"
 : '
+echo
+echo "Running Submission Splitting"
 redis-server --dir "$REDIS_DIR" --daemonize yes # Start the Redis database
 "$PYTHON" ./split-submissions.py \
     --input "$REDDIT" \
@@ -67,6 +71,8 @@ redis-server --dir "$REDIS_DIR" --daemonize yes # Start the Redis database
 redis-cli shutdown & # shutdown the Redis database
 '
 
+echo
+echo "Running Submission Merging"
 "$PYTHON" ./merge-reddit.py --submissions \
     --input "$SUBMISSIONS_SPLIT_DIR" \
     --output "$SUBMISSIONS_OUTPUT" \
