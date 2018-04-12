@@ -127,7 +127,7 @@ def mapped_split_core(reddit_directory, data_set_name, table_fname, mapped_col, 
 
     logger.debug("Mapping column \"%s\" from Redis ..." % mapped_col)
     redis_db = get_redis_db(redis_pool)
-    df[result_col] = get_values_from_redis(redis_db, df[mapped_col], num_chunks=1)
+    df[result_col] = get_values_from_redis(redis_db, df[mapped_col], num_chunks=7)
     df[result_col].fillna(df[mapped_col], inplace=True)
 
     # Make a map of output files for each of the splits as well as creating the

@@ -55,6 +55,30 @@ def get_data_type(directory):
     return DataType.unknown
 
 
+def get_split_number(directory):
+    """
+    Determines the "split number" of a directory
+
+    If a directory is the result of a splitting operation, then it should be
+    named as the string representation of it's split number, for example:
+
+    "/path/to/the/directory/of/splits/00123"
+
+    The "split number" for this directory would be the integer 123
+    :param directory: The directory to get the split number of
+    :return: The split number assigned to the directory
+    """
+    base, name = os.path.split(directory)
+    if name:
+        try:
+            return int(name)
+        except ValueError:
+            raise ValueError("Directory: \"%s\" is not assigned a split number" % directory)
+    else:
+        # In this case, it was something like "/path/to/splits/0123/"
+        return get_split_number(base)
+
+
 def listdir(directory):
     """
     Gets the full paths to the contents of a directory

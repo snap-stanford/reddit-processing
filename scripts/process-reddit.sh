@@ -15,7 +15,7 @@ REDDIT="/dfs/dataset/infolab/20180122-Reddit/data"
 OUTPUT_DIRECTORY="/dfs/scratch2/jdeaton/reddit/reddit_processed"
 LFS_SCRATCH="/lfs/local/0/jdeaton"
 PYTHON=$(which python)
-POOL_SIZE=128
+POOL_SIZE=64
 
 ##################################################
 

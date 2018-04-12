@@ -36,7 +36,7 @@ def get_aggregate_file(output_directory, split_directory):
     return os.path.join(output_directory, os.path.split(split_directory)[1] + ".csv")
 
 
-def merge_dataset(input_directory, output_directory, strategy, pool_size=16, sequential=False):
+def merge_dataset(input_directory, output_directory, strategy, split_range=None, pool_size=16, sequential=False):
     """
     Merges a reddit data-set that has been split up into independent subsets
 
@@ -47,12 +47,17 @@ def merge_dataset(input_directory, output_directory, strategy, pool_size=16, seq
     :param sequential: Set to true if you'd like your program to take a month
     :return: None
     """
+
+    directories = listdir(input_directory)  # get the split directories to process
+    if split_range is not None:
+        directories = [d for d in directories if get_split_number(d) in range(split_range)]
+
     if sequential:
-        for sub_dir in listdir(input_directory):
+        for sub_dir in directories:
             merge_data_subset(sub_dir, output_directory, strategy)
     else:
         pool = mp.Pool(pool_size)
-        args_list = [(file, output_directory, strategy) for file in listdir(input_directory)]
+        args_list = [(sub_dir, output_directory, strategy) for sub_dir in directories]
         pool.map(unpack_merge_data_subset, args_list)
 
 
@@ -251,6 +256,7 @@ def parse_args():
     options_group.add_argument("--submissions", action="store_true", help="Merge data set split by submission")
     options_group.add_argument('-s', '--sequential', action='store_true', help="Process sequentially")
     options_group.add_argument('-p', '--pool-size', type=int, default=20, help="Thread-pool size")
+    options_group.add_argument('-r', '--range', type=int, nargs='+', help="Range of splits to process (inclusive)")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
@@ -265,6 +271,13 @@ def main():
 
     global logger
     logger = log.init_logger_argparse(args)
+
+    if args.range is not None and len(args.range) != 2:
+        logger.error("Expected split range of length 2. Got range size of %d" % len(args.range))
+        exit(1)  # not going to continue with this error
+    else:  # well formed argument
+        split_range = sorted(args.range)
+        split_range = range(split_range[0], split_range[1] + 1)
 
     input_directory = os.path.expanduser(args.input)
     output_directory = os.path.expanduser(args.output)
@@ -283,7 +296,9 @@ def main():
     strategy = MergeType.submission if args.submissions else MergeType.user
 
     logger.info("Merge type: %s" % strategy)
-    merge_dataset(input_directory, output_directory, strategy, pool_size=args.pool_size, sequential=args.sequential)
+    merge_dataset(input_directory, output_directory, strategy,
+                  split_range=split_range,
+                  pool_size=args.pool_size, sequential=args.sequential)
 
 
 if __name__ == "__main__":
