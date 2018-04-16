@@ -274,8 +274,18 @@ def get_split_set(args_set, args_range, set_file=None):
 
     if set_file is not None:
         with open(set_file, 'r') as f:
-            numbers = set(map(int, f.readlines()))
-            split_set = add_to(split_set, numbers)
+            try:
+                numbers = set(map(int, f.read().split()))
+                split_set = add_to(split_set, numbers)
+            except FileNotFoundError:
+                logger.error("Split set file: %s not found." % set_file)
+                raise
+            except ValueError:
+                logger.error("Malformed split set file: %s" % set_file)
+                raise
+            except:
+                logger.error("Split set file: %s" % set_file)
+                raise
     return split_set
 
 
@@ -297,7 +307,7 @@ def parse_args():
     options_group.add_argument('-s', '--sequential', action='store_true', help="Process sequentially")
     options_group.add_argument('-p', '--pool-size', type=int, default=20, help="Thread-pool size")
     options_group.add_argument('-r', '--range', type=int, nargs='+', help="Range of splits to process (inclusive)")
-    options_group.add_argument('--set', type=int, nargs='+', help="Set of splits to merge")
+    options_group.add_argument('--set', type=int, nargs='+', help="Set of splits numbers to merge")
     options_group.add_argument('--set-file', type=str, help="File containing a set of splits to merge")
 
     console_options_group = parser.add_argument_group("Console Options")
