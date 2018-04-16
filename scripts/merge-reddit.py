@@ -241,6 +241,44 @@ def rearrange_for_submission_join(df, data_type, event_type='event_type'):
     return df
 
 
+def get_split_set(args_set, args_range, set_file=None):
+    """
+    Gets the set of splits to merge
+    :param args_set: Set of args to merge from command line
+    :param args_range: Range (inclusive) of splits to process
+    :param set_file: File containing set of splits to process
+    :return: A set of split numbers to process or None if
+    """
+    split_set = None
+
+    def add_to(split_set, iterable):
+        if split_set is None:
+            return iterable
+
+        if iterable is not None:
+            split_set.update(iterable)
+
+        return split_set
+
+    split_range = None
+    if args_range is not None and len(args_range) != 2:
+        split_range = None
+        logger.error("Expected split range of length 2. Got range size of %d" % len(args_range))
+        exit(1)  # not going to continue with this error
+    elif args_range is not None:
+        split_range = sorted(args_range)
+        split_range = set(range(split_range[0], split_range[1] + 1))
+
+    split_set = add_to(split_set, split_range)
+    split_set = add_to(split_set, args_set)
+
+    if set_file is not None:
+        with open(set_file, 'r') as f:
+            numbers = set(map(int, f.readlines()))
+            split_set = add_to(split_set, numbers)
+    return split_set
+
+
 def parse_args():
     """
     Parse the command line options for this file
@@ -260,6 +298,7 @@ def parse_args():
     options_group.add_argument('-p', '--pool-size', type=int, default=20, help="Thread-pool size")
     options_group.add_argument('-r', '--range', type=int, nargs='+', help="Range of splits to process (inclusive)")
     options_group.add_argument('--set', type=int, nargs='+', help="Set of splits to merge")
+    options_group.add_argument('--set-file', type=str, help="File containing a set of splits to merge")
 
     console_options_group = parser.add_argument_group("Console Options")
     console_options_group.add_argument('-v', '--verbose', action='store_true', help='verbose output')
@@ -269,36 +308,13 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_split_set(args_set, args_range):
-    """
-    Gets the set of splits to merge
-    :param args_set: Set of args to merge from command line
-    :param args_range: Range (inclusive) of splits to process
-    :return: A set of split numbers to process or None if
-    """
-
-    if args_range is None:
-        split_range = None
-    else:
-        if len(args_range) != 2:
-            logger.error("Expected split range of length 2. Got range size of %d" % len(args_range))
-            exit(1)  # not going to continue with this error
-        else:  # well formed range argument
-            split_range = sorted(args_range)
-            split_range = set(range(split_range[0], split_range[1] + 1))
-
-    if args_set is None:
-        return split_range
-    return set(args_set).union(split_range if split_range is not None else set())
-
-
 def main():
     args = parse_args()
 
     global logger
     logger = log.init_logger_argparse(args)
 
-    split_set = get_split_set(args.set, args.range)
+    split_set = get_split_set(args.set, args.range, set_file=os.path.expanduser(args.set_file))
 
     input_directory = os.path.expanduser(args.input)
     output_directory = os.path.expanduser(args.output)
