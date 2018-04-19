@@ -22,8 +22,23 @@ The data, totaling ~1.8 TB, is split into 7 tables:
 6. Removals – 170 Million Entries, ~10 GB
 7. Reports – 35 Million Entries, ~3 GB
 
-On the SNAP servers, this Reddit data set is located in 
-`/dfs/dataset/infolab/20180122-Reddit/`
+On the SNAP servers, this Reddit data set is located in `/dfs/dataset/infolab/20180122-Reddit/` and it's directory structure is as follows
+
+```
+data
+├── stanford_comment_data
+│   ├── stanford_comment_data000000000000.csv
+│   ├── stanford_comment_data000000000001.csv
+│   └──...
+├── stanford_removal_data
+├── stanford_report_data
+├── stanford_submission_data
+├── stanford_subscription_data
+├── stanford_user_data
+└── stanford_vote_data
+```
+
+This directory structure is expected by the scripts in this repository that perform preprocessing.
 
 ## Reddit Data Schema
 
@@ -128,6 +143,9 @@ The final output is a set of `1024` TSV files of the following schema, sorted by
 | `approval`   | User ID   | Subreddit Name | Target full name  | Target Type  | User Type        |              |
 | `report`     | User ID   | Subreddit Name | Target full name  | Target Type  | Process Notes    | Details Text |
 
+## Data Inconsistencies
+Not all of the comment IDs that are found in the reports, removals, and vote data sets are found in the comment data sets. For this reason the reports/removals/approvals that have no associated submission will be put in TSV files located in the `missing` directory of the output directory. This will only occur in the submission joining. In addition, some user actions are associated with a submission that is missing from teh data set this manifests in the submission grouped output data set as actions that have no preceding-submission row.
+
 ## Implementation Details
 
 Each of the two transformations is composed of two steps
@@ -139,6 +157,26 @@ Each of the two transformations is composed of two steps
 2. Merge all actions from each of the `1024` independent subsets of the data.
     - For each of the `1024` directories, every user action is read into a single DataFrame. That DataFrame then sorted by `user_id` or `post_fullanme` for user and submission grouping, respectively, and then by time. The final sorted DataFrame is then written to a single TSV file named `00231.tsv` for example.
 
+Intermediate files directory structure
+
+```
+split-dataset
+├── 00000
+│   ├── stanford_comment_data
+│   ├── stanford_removal_data
+│   ├── stanford_report_data
+│   ├── stanford_submission_data
+│   ├── stanford_subscription_data
+│   ├── stanford_user_data
+│   └── stanford_vote_data
+├── 00001
+│   ├── stanford_comment_data
+│   ├── ...
+├──...
+└── 01023
+```
+
+
 ##### Source Code files
 - `process-reddit.sh`: Top level script to run pre-processing
 - `scripts/split-users.py` : This script splits the data set by user ID.
@@ -149,10 +187,6 @@ Each of the two transformations is composed of two steps
 - `scripts/reddit.py`: Collection of utility functions used throughout processing
 - `scripts/get-redis.py`: Helper methods for inserting and lookups from Redis database
 - `scripts/log.py`: Sets up a global logger with some nice defaults.
-
-
-## Data Inconsistencies
-Not all of the comment IDs that are found in the reports, removals, and vote data sets are found in the comment data sets. For this reason the reports/removals/approvals that have no associated submission will be put in TSV files located in the `missing` directory of the output directory. This will only occur in the submission joining. In addition, some user actions are associated with a submission that is missing from teh data set this manifests in the submission grouped output data set as actions that have no preceding-submission row.
 
 ## Dependencies
 
