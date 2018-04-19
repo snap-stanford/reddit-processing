@@ -13,7 +13,6 @@ import argparse
 import multiprocessing as mp
 import pandas as pd
 import psutil
-import progressbar
 import random
 
 from reddit import *

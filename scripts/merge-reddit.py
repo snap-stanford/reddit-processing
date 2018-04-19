@@ -378,7 +378,8 @@ def main():
         raise Exception()
 
     if not os.path.exists(args.output):
-        logger.debug("Output directory: %s did not exist. Creating it..." % output_directory)
+        logger.debug("Output directory: %s did "
+                     "not exist. Creating it..." % output_directory)
         os.makedirs(output_directory)
     else:
         logger.debug("Output directory: %s" % output_directory)

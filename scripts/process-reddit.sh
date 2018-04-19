@@ -8,12 +8,10 @@
 # In order to use this script you should edit the following variables to be the proper paths
 #   - REDDIT: The top level reddit directory
 #   - OUTPUT_DIRECTORY: The directory to put the output files
-#   - LFS_SCRATCH: A directory mounted on fast storage for the redis database to use
 #   - PYTHON: Set this to be your Python 3 interpreter
 
 REDDIT="/dfs/dataset/infolab/20180122-Reddit/data"
 OUTPUT_DIRECTORY="/dfs/scratch2/jdeaton/reddit/reddit_processed"
-LFS_SCRATCH="/lfs/local/0/jdeaton"
 PYTHON=$(which python)
 POOL_SIZE=64
 
@@ -31,15 +29,12 @@ SCRATCH="$OUTPUT_DIRECTORY/scratch"
 USERS_SPLIT_DIR="$SCRATCH/user_split"
 SUBMISSIONS_SPLIT_DIR="$SCRATCH/submission_split"
 LOG="$SCRATCH/log" # directory to store logs in
+TIME=$(date +"%Y-%m-%d_%H-%M-%S")
 
 # Database to store comment --> base submission mapping (~100 GB)
 REDIS_DIR="$SCRATCH/redis"
 
-# Cache to store comment --> base submission mapping (~41 GB)
-COMMENT_CACHE="$SCRATCH/comment_map_cache"
-
 mkdir -p $REDIS_DIR
-TIME=$(date +"%Y-%m-%d_%H-%M-%S")
 
 : '
 echo
