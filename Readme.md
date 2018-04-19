@@ -147,8 +147,17 @@ Each of the two transformations is composed of two steps
 
 #### Submission Grouped Output TSV Schema
 
-| User ID   | Endpoint Time Stamp | Event Type   | Varying fields |
-|-----------|---------------------|--------------|----------------|
+| User ID         | Endpoint Time Stamp | Event Type   | Varying fields |
+|-----------------|---------------------|--------------|----------------|
 | `post_fullname` | `endpoint_ts`       | `event_type` | ...            |
 
 ###### Varying fields for Submission Grouped
+
+| Event Type   | `param_0` | `param_1`      | `param_2`         | `param_3`    | `param_4`        | `param_5`    |
+|--------------|-----------|----------------|-------------------|--------------|------------------|--------------|
+| `submission` | User ID   | Subreddit Name | Post Type         | Post Title   | Post Target URL  | Post Body    |
+| `comment`    | User ID   | Subreddit Name | Comment full name | Comment Body | Parent full name |              |
+| `vote`       | User ID   | Subreddit Name | Target full name  | Target Type  | Vote Direction   |              |
+| `removal`    | User ID   | Subreddit Name | Target full name  | Target Type  | User Type        |              |
+| `approval`   | User ID   | Subreddit Name | Target full name  | Target Type  | User Type        |              |
+| `report`     | User ID   | Subreddit Name | Target full name  | Target Type  | Process Notes    | Details Text |
