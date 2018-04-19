@@ -366,7 +366,8 @@ def main():
     global logger
     logger = log.init_logger_argparse(args)
 
-    split_set = get_split_set(args.set, args.range, set_file=os.path.expanduser(args.set_file))
+    set_file = None if args.set_file is None else os.path.expanduser(args.set_file)
+    split_set = get_split_set(args.set, args.range, set_file=set_file)
 
     input_directory = os.path.expanduser(args.input)
     output_directory = os.path.expanduser(args.output)
