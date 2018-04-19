@@ -39,6 +39,7 @@ REDIS_DIR="$SCRATCH/redis"
 COMMENT_CACHE="$SCRATCH/comment_map_cache"
 
 mkdir -p $REDIS_DIR
+TIME=$(date +"%Y-%m-%d_%H-%M-%S")
 
 : '
 echo
@@ -47,15 +48,15 @@ echo "Running User Splitting"
     --input "$REDDIT" \
     --output "$USERS_SPLIT_DIR" \
     --pool-size "$POOL_SIZE" \
-    --debug --log "$LOG/split_user.log"
+    --debug --log "$LOG/split_user-$HOSTNAME-$TIME.log"
 
 echo
 echo "Running User Splitting"
 "$PYTHON" ./merge-reddit.py --users \
     --input "$USERS_SPLIT_DIR" \
     --output "$USERS_OUTPUT" \
-    --pool-size "$POOL_SIZE" \
-    --debug --log "$LOG/merge_user.log"
+    --pool-size 16 \
+    --debug --log "$LOG/merge_user-$HOSTNAME-$TIME.log"
 '
 
 : '
@@ -66,7 +67,7 @@ redis-server --dir "$REDIS_DIR" --daemonize yes # Start the Redis database
     --input "$REDDIT" \
     --output "$SUBMISSIONS_SPLIT_DIR" \
     --pool-size "$POOL_SIZE" \
-    --debug --log "$LOG/split_sub.log" || echo "Failed. Redis DB still running..." && exit $?
+    --debug --log "$LOG/split_sub-$HOSTNAME-$TIME.log" || echo "Failed. Redis DB still running..." && exit $?
 
 redis-cli shutdown & # shutdown the Redis database
 '
@@ -76,5 +77,5 @@ echo "Running Submission Merging"
 "$PYTHON" ./merge-reddit.py --submissions \
     --input "$SUBMISSIONS_SPLIT_DIR" \
     --output "$SUBMISSIONS_OUTPUT" \
-    --pool-size "$POOL_SIZE" \
-    --debug --log "$LOG/merge_sub.log"
+    --pool-size 16 \
+    --debug --log "$LOG/merge_sub-$HOSTNAME-$TIME.log"

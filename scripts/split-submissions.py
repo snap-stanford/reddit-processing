@@ -146,7 +146,6 @@ def split_data_set(reddit_path, data_set_name, on, num_splits, target_directorie
     """
     Splits a Reddit Dataset
 
-
     :param reddit_path: Directory containing all Reddit Datasets
     :param data_set_name: Name of the sub-directory containing the data-set to split
     :param on: The column to split the data set on

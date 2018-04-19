@@ -86,7 +86,9 @@ def listdir(directory):
     :param directory: A path to some directory
     :return: An iterator yielding full paths to all files in the specified directory
     """
-    return map(lambda d: os.path.join(directory, d), os.listdir(directory))
+    m = map(lambda d: os.path.join(directory, d), os.listdir(directory))
+    contents = [f for f in m if not f.startswith('.')]
+    return contents
 
 
 def mkdir(directory):

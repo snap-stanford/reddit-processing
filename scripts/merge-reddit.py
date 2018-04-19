@@ -19,7 +19,10 @@ import log
 import argparse
 import multiprocessing as mp
 import pandas as pd
+import numpy as np
+
 from enum import Enum
+
 
 class MergeType(Enum):
     user = 0  # Merge a data set that was split by user ID
@@ -33,7 +36,7 @@ def get_aggregate_file(output_directory, split_directory):
     :param split_directory: Direstory containing the reddit subset
     :return: A name to use to write the result of merging the split_directory
     """
-    return os.path.join(output_directory, os.path.split(split_directory)[1] + ".csv")
+    return os.path.join(output_directory, "%05d.tsv" % get_split_number(split_directory))
 
 
 def merge_dataset(input_directory, output_directory, strategy, split_set=None, pool_size=16, sequential=False):
@@ -67,7 +70,7 @@ def unpack_merge_data_subset(args):
     merge_data_subset(*args)
 
 
-def merge_data_subset(directory, output_directory, strategy):
+def merge_data_subset(split_directory, output_directory, strategy):
     """
     Merge one independent subset of reddit data
 
@@ -75,13 +78,13 @@ def merge_data_subset(directory, output_directory, strategy):
     directory and write the result to the output file. In the context of the typica
     l use case these would be one the directories named
     "scratch/split/00001"
-    :param directory: A single directory
+    :param split_directory: A single directory
     :param output_directory: The output directory to write all the stuff to
     :param strategy: An instance of MergeType specifying whether to merge based on user ids
     or based on submission ids
     :return: None
     """
-    logger.info("Merging directory: %s" % directory)
+    logger.info("Merging directory: %s" % split_directory)
 
     def get_data_set_df(data_subset_dir, drop_cols=['bucket', 'bkt']):
         logger.debug("Loading data from: %s" % data_subset_dir)
@@ -101,11 +104,11 @@ def merge_data_subset(directory, output_directory, strategy):
         logger.debug("Finished modifying columns: %s" % data_subset_dir)
         return df
 
-    logger.debug("Aggregating subset directory: %s" % directory)
-    df = pd.concat(map(get_data_set_df, listdir(directory)))
-    logger.debug("Finished aggregating: %s" % directory)
+    logger.debug("Aggregating subset directory: %s" % split_directory)
+    df = pd.concat(map(get_data_set_df, listdir(split_directory)))
+    logger.debug("Finished aggregating: %s" % split_directory)
 
-    logger.debug("Sorting: %s" % directory)
+    logger.debug("Sorting: %s" % split_directory)
     if strategy == MergeType.user:
         df.sort_values(by=['user_id', 'endpoint_ts'], inplace=True)
         final_columns = ['user_id', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
@@ -114,9 +117,44 @@ def merge_data_subset(directory, output_directory, strategy):
         final_columns = ['post_fullname', 'endpoint_ts', 'event_type'] + ['param_%d' % i for i in range(6)]
     df = df[final_columns]  # rearrange columns...
 
-    final_output = get_aggregate_file(output_directory, directory)
-    logger.info("Writing output: %s" % final_output)
-    df.to_csv(final_output, index=False, sep="\t")
+    # Safe the data frame as it's final output
+    save_final_merge(df, output_directory, split_directory, strategy)
+
+
+def save_final_merge(df, output_directory, split_directory, strategy):
+    """
+    Saves the final, merged data frame to the output directory
+
+    :param df: The DataFrame containing the final, merged
+    :param output_directory: The output directory to store the saved data frame
+    :param split_directory: The split directory from which the aggregated DataFrame was made
+    :param strategy: Whether the DataFrame was generated for submission or user merge
+    :return: None
+    """
+
+    if strategy == MergeType.submission:
+        # Filter out comments that were not found in the map
+        unknown_comments = df['post_fullname'].str.startswith('t1')
+        logger.info("Filtering out %d unknown comments..." % np.sum(unknown_comments))
+        missing_comments = df[unknown_comments]
+
+        missing_dir = os.path.join(output_directory, "missing")
+        mkdir(missing_dir)
+        missing_comments_filename = os.path.join(missing_dir,  "%05d.tsv" % get_split_number(split_directory))
+
+        logger.info("Saving filtered comments: %s" % missing_comments_filename)
+        missing_comments.to_csv(missing_comments_filename, index=False, sep="\t")
+
+        # Keep just the ones that were able to be looked up
+        df = df[~unknown_comments]
+
+    final_output_file = get_aggregate_file(output_directory, split_directory)
+    logger.info("Writing output: %s" % final_output_file)
+    try:
+        df.to_csv(final_output_file, index=False, sep="\t")
+        logger.info("Finished writing: %s" % final_output_file)
+    except:
+        logger.error("Could not write output file: %s" % final_output_file)
 
 
 def aggregate_dataframes(directory):
@@ -214,30 +252,30 @@ def rearrange_for_submission_join(df, data_type, event_type='event_type'):
 
     base_cols = ['post_fullname', 'endpoint_ts', event_type]
 
-    if data_type == DataType.votes:
-        # endpoint_ts,user_id,sr_name,target_fullname,target_type,vote_direction
-        df[event_type] = 'vote'
-        param_cols = ['sr_name', 'target_fullname', 'target_type', 'vote_direction']
+    if data_type == DataType.submissions:
+        # endpoint_ts,user_id,sr_name,post_fullname,post_type,post_title,post_target_url,post_body
+        df[event_type] = 'submission'
+        param_cols = ['user_id', 'sr_name', 'post_type', 'post_title', 'post_target_url', 'post_body']
 
     if data_type == DataType.comments:
         # endpoint_ts,user_id,sr_name,comment_fullname,comment_body,parent_fullname,post_fullname
         df[event_type] = 'comment'
-        param_cols = ['sr_name', 'comment_fullname', 'comment_body', 'parent_fullname', 'post_fullname']
+        param_cols = ['user_id', 'sr_name', 'comment_fullname', 'parent_fullname', 'comment_body']
 
-    if data_type == DataType.submissions:
-        # endpoint_ts,user_id,sr_name,post_fullname,post_type,post_title,post_target_url,post_body
-        df[event_type] = 'submission'
-        param_cols = ['sr_name', 'post_fullname', 'post_type', 'post_title', 'post_target_url', 'post_body']
+    if data_type == DataType.votes:
+        # endpoint_ts,user_id,sr_name,target_fullname,target_type,vote_direction
+        df[event_type] = 'vote'
+        param_cols = ['user_id', 'sr_name', 'target_fullname', 'target_type', 'vote_direction']
 
     if data_type == DataType.removals:
         # endpoint_ts,user_id,sr_name,event_type,target_fullname,target_type,user_type
         # event_type is already present here
-        param_cols = ['sr_name', 'target_fullname', 'target_type', 'user_type']
+        param_cols = ['user_id', 'sr_name', 'target_fullname', 'target_type', 'user_type']
 
     if data_type == DataType.reports:
         # endpoint_ts,user_id,sr_name,target_fullname,target_type,process_notes,details_text
         df[event_type] = 'report'
-        param_cols = ['sr_name', 'target_fullname', 'target_type', 'process_notes', 'details_text']
+        param_cols = ['user_id', 'sr_name', 'target_fullname', 'target_type', 'process_notes', 'details_text']
 
     df = df[base_cols + param_cols]  # reorder columns
     new_columns = base_cols + ['param_%d' % i for i in range(len(param_cols))]
