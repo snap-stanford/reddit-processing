@@ -1,14 +1,16 @@
 # Reddit-Preprocessor
 
-Preprocessing pipelines for Reddit Data containing all user actions from 2016 and 2017. Code hre provides two kinds of transformations. The first transformation groups all user actions by User ID, and the second groups all user actions by submission ID.
+Preprocessing pipelines for Reddit Data containing all user actions from 2016 and 2017. This code generates two kinds of data transformations. The first transformation groups all user actions by User ID, and the second groups all user actions by submission ID.
 
 ## Usage
 
-To use the scripts, edit the following constants in `scripts/process-reddit.sh`:
+To use for Reddit data pre-processing, modify the following constants in `scripts/process-reddit.sh` as needed:
 
    - `REDDIT`: The top level Reddit directory
    - `OUTPUT_DIRECTORY`: The directory to put the output files
    - `PYTHON`: Set this to be a Python 3 interpreter
+
+and then run `scripts/process-reddit.sh`.
 
 ## Reddit Data Overview
 
