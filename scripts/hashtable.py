@@ -1,5 +1,5 @@
 """
-File: hashmap.py
+File: hashtable.py
 
 A shared memory hash map build on top of multiprocessing.Array
 
@@ -10,11 +10,12 @@ without relying on multiprocessing.Manager.dict
 import multiprocessing as mp
 import ctypes
 import contextlib
+import sys
 
 __author__ = "Jon Deaton"
 
 
-class HashMap(object):
+class HashTable(object):
     def __init__(self, key_value_pairs=None,
                  key_type=ctypes.c_char_p, value_type=ctypes.c_char_p, capacity=1000, lock=False):
         class KeyValue(ctypes.Structure):
@@ -24,16 +25,21 @@ class HashMap(object):
                 ('origin', ctypes.c_int)
             ]
 
-            def __init__(self):
-                super(KeyValue, self).__init__()
-                self.origin = -1
+            # def __init__(self):
+            #     super(KeyValue, self).__init__()
+            #     self.origin = -1
+
+        initializer = KeyValue()
+        initializer.key = key_type()
+        initializer.value = value_type()
+        initializer.origin = -1
 
         self.KV_type = KeyValue
         self.key_type = key_type
         self.value_type = value_type
         self.capacity = capacity if not key_value_pairs or capacity >= len(key_value_pairs) else 2 * capacity
         self.lock = lock if lock else contextlib.suppress()
-        self.arr = mp.Array(self.KV_type, self.capacity)
+        self.arr = mp.Array(self.KV_type, [initializer] * self.capacity)
         self.size = mp.Value('i', 0)
 
         self.clear()

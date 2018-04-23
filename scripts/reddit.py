@@ -1,22 +1,24 @@
 """
-File: reddit_utils
-
-Utility functions and definitions for processing the reddit data-set
+File: reddit.py
+Utility functions and definitions for processing the Reddit data-set
 
 Author: Jon Deaton
 Date: March 2018
 """
 
 import os
+import sys
 import hashlib
 import pickle
 from enum import Enum
 import logging
 import pandas as pd
 import psutil
+import redis
+import time
 
 logger = logging.getLogger('root')
-
+python2 = sys.version_info < (3, 0)
 
 class DataType(Enum):
     """
@@ -53,6 +55,30 @@ def get_data_type(directory):
     return DataType.unknown
 
 
+def get_split_number(directory):
+    """
+    Determines the "split number" of a directory
+
+    If a directory is the result of a splitting operation, then it should be
+    named as the string representation of it's split number, for example:
+
+    "/path/to/the/directory/of/splits/00123"
+
+    The "split number" for this directory would be the integer 123
+    :param directory: The directory to get the split number of
+    :return: The split number assigned to the directory
+    """
+    base, name = os.path.split(directory)
+    if name:
+        try:
+            return int(name)
+        except ValueError:
+            raise ValueError("Directory: \"%s\" is not assigned a split number" % directory)
+    else:
+        # In this case, it was something like "/path/to/splits/0123/"
+        return get_split_number(base)
+
+
 def listdir(directory):
     """
     Gets the full paths to the contents of a directory
@@ -60,7 +86,9 @@ def listdir(directory):
     :param directory: A path to some directory
     :return: An iterator yielding full paths to all files in the specified directory
     """
-    return map(lambda d: os.path.join(directory, d), os.listdir(directory))
+    m = map(lambda d: os.path.join(directory, d), os.listdir(directory))
+    contents = [f for f in m if not f.startswith('.')]
+    return contents
 
 
 def mkdir(directory):
@@ -72,11 +100,13 @@ def mkdir(directory):
     :param directory: A path to a directory to create
     :return: None
     """
-    try:
-        os.mkdir(directory)
-    except:
-        pass
-    # os.makedirs(directory, exist_ok=True)
+    if python2:
+        os.makedirs(directory, exist_ok=True)
+    else:
+        try:
+            os.mkdir(directory)
+        except FileExistsError:
+            pass
 
 
 def hash(s):
@@ -89,6 +119,27 @@ def hash(s):
     return int(hashlib.md5(s.encode()).hexdigest(), 16)
 
 
+def chunk_list(l, num_chunks):
+    """
+    Chunks a list into contiguous regions
+
+    :param l: The list to chunk
+    :param num_chunks: The number of chunks to break the list up into
+    :return: A generator that returns each of the chunks (which are also generators)
+    """
+
+    if type(l) is not list:
+        l = list(l)
+
+    def chunker(c):
+        for i, key, in enumerate(l):
+            if int(i * num_chunks / len(l)) == c:
+                yield key
+
+    for c in range(num_chunks):
+        yield chunker(c)
+
+
 def save_dict(d, fname):
     """
     Save a dictionary by serializing to file
@@ -97,7 +148,8 @@ def save_dict(d, fname):
     :param fname: The filename to save it
     :return: None
     """
-    pickle.dump(d, open(fname, 'wb'))
+    with open(fname, 'wb') as f:
+        pickle.dump(d, f)
 
 
 def load_dict(fname):
@@ -107,10 +159,105 @@ def load_dict(fname):
     :param fname: Path to a file containing the serialized dictionary
     :return: The dictionary that was stored in the file
     """
-    return pickle.load(open(fname, 'rb'))
+    with open(fname, 'rb') as f:
+        return pickle.load(f)
 
 
-def split_file(on, file_path, targets, num_splits, map_columns=None, maps_dir=None):
+def get_redis_db(redis_pool):
+    """
+    Get a connection to a Redis database
+
+    :param redis_pool: Pool of connections to use to connect to
+    :return: Redis database (fully loaded)
+    """
+    redis_db = redis.StrictRedis(connection_pool=redis_pool)
+    if redis_db.info()['loading']:
+        logger.debug("Waiting for Redis to load database. ETA: %d min" % (redis_db.info()['loading_eta_seconds'] / 60))
+    while redis_db.info()['loading']:
+        try:
+            sleep_time = min(redis_db.info()['loading_eta_seconds'], 60)
+        except KeyError:
+            continue
+        time.sleep(sleep_time)
+    return redis_db
+
+
+def dump_dict_to_redis(redis_db, d, num_chunks=7, retries=5):
+    """
+    Stores a dictionary in a redis database
+
+    This function will dump a (potentially large) dictionary or list of key-value pairs into
+    the specified Redis database. This is accomplished by breaking up the dictionary into a
+    number of chunks and using MSET in order to dump many key-value pairs at the same time.
+    If the chunks are too large, then the connection will be reset by the database and
+    this function will re-try while breaking up the dictionary into smaller chunks instead.
+    :param redis_db: The redis database to dump the dictionary into
+    :param d: Dictionary or key-value pair iterator to dump into the Redis database
+    :param num_chunks: The number of chunks to split the dictionary into in order
+    to store it in the database
+    :return: None
+    """
+
+    if num_chunks == 1:
+        try:
+            redis_db.mset(d)
+            return 1
+        except redis.exceptions.ConnectionError:
+            return dump_dict_to_redis(redis_db, d, num_chunks=10)
+
+    try:
+        for c in range(num_chunks):
+            chunk = {key: value for i, (key, value) in enumerate(d.items()) if i % num_chunks == c}
+            redis_db.mset(chunk)
+        return num_chunks  # return. how many chunks it took... might be useful info for caller
+
+    except redis.exceptions.ConnectionError:
+        if retries == 0:
+            raise
+        logger.debug("Dumping in chunks of %d failed. Trying %d..." % (num_chunks, 2 * num_chunks))
+        return dump_dict_to_redis(redis_db, d, num_chunks=2 * num_chunks, retries=retries - 1)
+
+
+def get_values_from_redis(redis_db, keys, num_chunks=7, retries=5):
+    """
+    Maps a list of keys to their values from a Redis database
+
+    :param redis_db: The Redis database to extract the values from
+    :param keys: The keys to get the values for
+    :param num_chunks: The number of chunks to split the key list into
+    :return: List of values found in the Redis database
+    """
+
+    def transform(v):
+        return list(map(lambda x: str(x, 'utf-8') if x else None, v))
+
+    if type(keys) is not list:
+        keys = list(keys)
+
+    if num_chunks == 1:
+        try:
+            if len(keys) > 0:
+                values = redis_db.mget(keys)
+                return transform(values)
+            else:
+                return []
+        except redis.exceptions.ConnectionError:
+            return get_values_from_redis(redis_db, keys)
+    else:
+        try:
+            values = []
+            for chunk in chunk_list(keys, num_chunks):
+                c = list(chunk)
+                if c:
+                    values.extend(redis_db.mget(c))
+            return transform(values)
+        except redis.exceptions.ConnectionError:
+            if retries == 0:
+                raise
+            return get_values_from_redis(redis_db, keys, num_chunks=2 * num_chunks, retries=retries - 1)
+
+
+def split_file(on, file_path, targets, num_splits):
     """
     Splits the rows of a data frame stored in a file on a specified column
 
@@ -120,28 +267,16 @@ def split_file(on, file_path, targets, num_splits, map_columns=None, maps_dir=No
     :param num_splits: The number of buckets to split the data frame up into
     :param map_columns: A tuple specifying two columns of the data frame that need to be
     zipped together into a python dictionary and saved to file. Must pass maps_dir as well.
-    :param maps_dir: A directory to save the mapping (dictionary) between the two columns specified
-    in map_columns. Must be passed with map_columns
+    :param redis_pool: Pool of redis database connections to dup the mapping into
     :return: None
     """
     file_name = os.path.split(file_path)[1]
     logger.debug("Reading: %s" % file_name)
     df = pd.read_csv(file_path)
 
-    process = psutil.Process(os.getpid())
-    logger.debug("PID: %d, Memory usage: %.1f GB" % (process.pid, process.memory_info().rss / 1e9))
-
     logger.debug("Splitting: %s" % file_name)
     file_targets = {i: os.path.join(targets[i], file_name) for i in targets}
     split_data_frame(df, on, lambda x: hash(x) % num_splits, file_targets)
-    if map_columns and maps_dir is None:
-        raise ValueError("Neither or both of map_columns and maps_dir must be passed.")
-    if map_columns and maps_dir:  # Need to pass both
-        logger.debug("Mapping column %s of %s" % (map_columns[0], file_name))
-        output_file = os.path.join(maps_dir, os.path.splitext(file_name)[0] + "_map.txt")
-        col_map = dict(zip(df[map_columns[0]], df[map_columns[1]]))  # Get the mapping of one column to another
-        logger.debug("Saving map: %s" % output_file)
-        save_dict(col_map, output_file)
 
 
 def unpack_split_file(args):
@@ -172,4 +307,24 @@ def split_data_frame(df, on, assign_split, output_file_map, temp_col='bkt', comp
     for i in output_file_map:
         df_out = df[df[temp_col] == i].drop(temp_col, axis=1)  # select rows and drop temporary column
         df_out.to_csv(output_file_map[i], index=False, compression='gzip' if compress else None)
+
+
+def create_split_directories(output_directory, num_splits):
+    """
+    Creates the target directories for each independent subset of the data
+
+    Will create files named "00000", "00001", ..., "<num_splits - 1>" in the output_directory
+    :param output_directory: The output directory to put the target directories in
+    :param num_splits: The number of directories to create
+    :return: A dict mapping each number from 0 -> num_splits - 1 to a corresponding directory
+    """
+    target_directories = {i: os.path.join(output_directory, "%05d" % i) for i in range(num_splits)}
+    for i in target_directories:
+        target_dir = target_directories[i]
+        if os.path.isfile(target_dir):
+            logger.error("File exists: %s" % target_dir)
+            exit(1)
+        mkdir(target_dir)
+
+    return target_directories
 
